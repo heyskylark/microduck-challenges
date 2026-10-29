@@ -125,6 +125,8 @@ from mjlab_microduck.robot.microduck_constants import MICRODUCK_WALK_ROBOT_CFG
 from mjlab_microduck.tasks import mdp as microduck_mdp
 from mjlab_microduck.tasks.symmetry import PpoWithSymmetryCfg, SYMMETRY_CFG
 
+from . import rewards as sprint_rewards
+
 
 def heading_error(env: ManagerBasedRlEnv) -> torch.Tensor:
     """How far the trunk has turned from the heading heading_hold holds (rad, wrapped).
@@ -308,6 +310,16 @@ def make_env_cfg(
         func=microduck_mdp.heading_hold_reward,
         weight=1.0,
         params={"std": 0.4, "asset_cfg": SceneEntityCfg("robot")},
+    )
+
+    # Speed paid for itself (EXPERIMENTS.md, A2). track_linear_velocity is a
+    # bell curve around the command (std² 0.1): a robot 0.6 m/s short of a
+    # 1.2 m/s command earns ~0 and feels no pull to go faster. lane_progress
+    # pays linearly for speed down the lane up to v_ref, whatever the command.
+    cfg.rewards["lane_progress"] = RewardTermCfg(
+        func=sprint_rewards.lane_progress,
+        weight=5.0,
+        params={"v_ref": 2.0, "command_name": "twist", "command_threshold": 0.01},
     )
 
     # Action smoothness: stage-0 value; the action_rate_weight curriculum below
