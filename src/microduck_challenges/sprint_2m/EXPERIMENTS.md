@@ -23,10 +23,10 @@ together.
 | **B4-head** | 5f6d00f | B2 + head freed at speed | 1900 | **1.824 s** | 5/5 | 1.20 | −0.33 s vs B2 |
 | D1-atleast | 9870cb4 | B2 + forward tracking one-sided (no cap above the command) | 1999 | 1.874 s | 5/5 | 1.20 | −0.28 s vs B2 |
 | E1-combo | 14a07a0 | B2 + D1 + B1, 3000 iterations | 2600 | 1.871 s | 5/5 | 1.20 | = D1: B1 adds nothing on D1, flat from 1500 |
-| E2-stack-s1 | c8deff2 | B2 + D1 + B1 + B4 (seed 1) | running | | | | |
-| E2-stack-s2 | c8deff2 | same, seed 2 | running | | | | |
-| E3-prog10 | 263f189 | E2 + `lane_progress` weight 5 → 10 | running | | | | |
-| E4-runpose | 5bc6ec8 | E2 + `pose` running tolerance from 0.6 m/s | running | | | | |
+| E2-stack-s1 | c8deff2 | B2 + D1 + B1 + B4 (seed 1) | 1600 | 1.744 s | 5/5 | 1.20 | −0.08 s vs B4 |
+| E2-stack-s2 | c8deff2 | same, seed 2 | 1500 | 1.708 s | 5/5 | 1.20 | replicates E2 (1.71–1.74) |
+| **E3-prog10** | 263f189 | E2 + `lane_progress` weight 5 → 10 | 1800 | **1.494 s** | 5/5 | 0.85 | −0.23 s vs E2; ~1.5 s at every vx |
+| E4-runpose | 5bc6ec8 | E2 + `pose` running tolerance from 0.6 m/s | 1999 | 1.771 s | 5/5 | 1.20 | = E2 (within seed noise): dropped |
 
 Pollen reference: 4.883 s at 0.55 m/s.
 
@@ -150,3 +150,36 @@ Pollen reference: 4.883 s at 0.55 m/s.
 - **Reading**: no gain on D1, and 1000 more iterations add nothing: this gait levels off around 1.87 s. B1 is
   kept as harmless (it fixes D1's 0.20 fall in this run), but the next gain has to come from elsewhere:
   the head (B4), stride freedom (`pose`), or the progress weight.
+
+### E2-stack: D1 + B1 + B4 on B2, seeds 1 and 2 (commit c8deff2)
+- **Hypothesis**: one-sided tracking (D1) and the freed head (B4) add up.
+- **Score per checkpoint, seed 1**: 900 1.93 · 1000 1.86 · 1200 1.79 · 1400 1.77 · **1600 1.74** · 1800 1.80 · 1999 1.78.
+- **Score per checkpoint, seed 2**: 900 1.98 · 1000 1.92 · 1100 1.84 · 1400 1.83 · **1500 1.71** · 1600 11.9 (4/5) ·
+  1700 11.5 (4/5) · 1800 1.78 · 1999 1.79.
+- **Sweep of seed 1's checkpoint 1600**: finishes at every vx, from 2.35 s at 0.20 to 1.74 s at 1.15–1.20.
+- **Curves at the end**: `lane_progress` 1.47/s, peak foot height 30–32 mm, `pose` 0.24–0.27, fell_over 0.32–0.36.
+- **Reading**: confirmed, and replicated on two seeds (1.74 and 1.71). The two gains partly add up: −0.08 s on
+  B4, −0.13 s on D1. Seed 2 has two 4/5 checkpoints in a row, so pick checkpoints by score, not by order.
+
+### E3-prog10: lane_progress weight 5 → 10 (commit 263f189)
+- **Hypothesis**: on E2, paying twice as much for lane speed now that the command no longer caps it buys a
+  faster gait.
+- **Score per checkpoint**: 300 2.13 · 400 1.97 · 500 11.5 (4/5) · 600 1.68 · 700 11.3 (4/5) · 800 1.62 · 900 1.54 ·
+  1000 1.51 · 1100–1700 1.51–1.53 · **1800 1.49** · 1900 1.55 · 1999 1.57. Flat at about 1.51 from 900 on.
+- **Sweep of checkpoint 1800**: **1.49–1.66 s at every vx from 0.25 to 1.20** (2.00 at 0.20). The command no longer
+  matters: the policy runs one gait, about 1.4 m/s down the lane once up to speed.
+- **Curves at the end**: fell_over **1.0** (E2 0.32), episode length 887/1000, peak foot height 42–48 mm,
+  `action_rate_l2` −2.85/s (E2 −1.67), `pose` 0.04, `upright` 1.41 (E2 1.72).
+- **Reading**: confirmed, the biggest gain since B2 (−0.23 s). It is a much more violent gait: high steps,
+  big action changes, three times the training falls. It falls with pushes in training, yet finishes
+  21/21 commands 5/5 in the Arena, which has none. Next: price the falls (F1), push harder (F2), replicate (F3),
+  and turn off the pushes the Arena does not have (F4).
+
+### E4-runpose: running pose tolerance (commit 5bc6ec8)
+- **Hypothesis**: on E2, a running tolerance on `pose` from 0.6 m/s (hip pitch/knee std 0.4 → 0.7, ankle 0.25 → 0.4)
+  lets the stride lengthen.
+- **Score per checkpoint**: 1000 1.83 · 1100 1.81 · 1200 1.79 · 1500 1.78 · 1800 1.77 · 1900 1.77 · **1999 1.77**.
+- **Curves at the end**: `pose` 0.36 (E2 0.27): the term pays more, but the gait, foot height and lane_progress
+  match E2's.
+- **Reading**: no gain (1.77 against E2's 1.71–1.74), dropped. Like B3: loosening a term the policy was already
+  paying for does not change the gait.
