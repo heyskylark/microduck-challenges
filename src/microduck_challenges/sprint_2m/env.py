@@ -230,18 +230,7 @@ def make_env_cfg(
     # Pose reward configuration
     cfg.rewards["pose"].params["std_standing"] = std_standing  # tight when command=0
     cfg.rewards["pose"].params["std_walking"] = std_walking
-    # E4 (EXPERIMENTS.md): commands from 0.6 m/s use a running tolerance, wider
-    # on the sagittal joints (hip pitch, knee 0.4 → 0.7, ankle 0.25 → 0.4) so
-    # the stride can lengthen; hip roll stays 0.05 (the flat-sole stance).
-    # `pose` fell to 0.24-0.29 in D1/E1: the faster gait pays to stride.
-    cfg.rewards["pose"].params["std_running"] = {
-        r".*hip_yaw.*": 0.3,
-        r".*hip_roll.*": 0.05,
-        r".*hip_pitch.*": 0.7,
-        r".*knee.*": 0.7,
-        r".*ankle.*": 0.4,
-    }
-    cfg.rewards["pose"].params["running_threshold"] = 0.6
+    cfg.rewards["pose"].params["std_running"] = std_walking
     # Pose reward operates on LEG joints only. Head/neck are command-driven
     # (head_pose_tracking) — if they were in this reward too, it would pull
     # them to HOME while head_pose_tracking pulls them to the command, and the
@@ -342,7 +331,7 @@ def make_env_cfg(
     # pays linearly for speed down the lane up to v_ref, whatever the command.
     cfg.rewards["lane_progress"] = RewardTermCfg(
         func=sprint_rewards.lane_progress,
-        weight=5.0,
+        weight=10.0,  # E3: 5 → 10, a stronger pull for speed once the caps are gone
         params={"v_ref": 2.0, "command_name": "twist", "command_threshold": 0.01},
     )
 
