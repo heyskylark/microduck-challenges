@@ -31,7 +31,7 @@ from copy import deepcopy
 NUM_STEPS_PER_ENV = 24
 
 # Symmetry
-ENABLE_SYMMETRY = True  # I2 (EXPERIMENTS.md): mirror loss, against the rightward drift
+ENABLE_SYMMETRY = False
 
 # Domain randomization toggles
 ENABLE_COM_RANDOMIZATION = True
