@@ -753,18 +753,15 @@ def make_env_cfg(
         },
     )
 
-    # Gradually increase standing env fraction after walking is established
+    # Standing env fraction held at 2% (EXPERIMENTS.md, G3/G4; was ramped to
+    # 25% by iter 2000): the Arena never commands 0, and E3-like runs fell
+    # more at the 1000/1500 steps of the ramp. 2% keeps the stand alive.
     cfg.curriculum["standing_envs"] = CurriculumTermCfg(
         func=microduck_mdp.standing_envs_curriculum,
         params={
             "command_name": "twist",
             "standing_stages": [
                 {"step": 0,           "rel_standing_envs": 0.02},
-                {"step": 500 * 24,    "rel_standing_envs": 0.05},
-                {"step": 750 * 24,    "rel_standing_envs": 0.1},
-                {"step": 1000 * 24,   "rel_standing_envs": 0.15},
-                {"step": 1500 * 24,   "rel_standing_envs": 0.2},
-                {"step": 2000 * 24,   "rel_standing_envs": 0.25},
             ],
         },
     )
