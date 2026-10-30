@@ -42,7 +42,7 @@ ENABLE_MASS_INERTIA_RANDOMIZATION = True  # Can enable once walking is stable
 ENABLE_JOINT_FRICTION_RANDOMIZATION = True  # Scales BAM's friction budget per-env via FrictionDRBamActuator.friction_scale
 ENABLE_JOINT_DAMPING_RANDOMIZATION = False
 ENABLE_ARMATURE_RANDOMIZATION = True  # Reflected rotor inertia (microban-style). DOES affect BAM (armature is set, not zeroed).
-ENABLE_VELOCITY_PUSHES = False  # F4 (EXPERIMENTS.md): the Arena never pushes
+ENABLE_VELOCITY_PUSHES = True  # Velocity-based pushes for robustness training
 ENABLE_IMU_ORIENTATION_RANDOMIZATION = True  # Simulates mounting errors
 ENABLE_ENCODER_BIAS = True  # Per-env joint encoder calibration offset (actor obs sees joint_pos + bias)
 ENABLE_BASE_ORIENTATION_RANDOMIZATION = False  # Randomize initial tilt to force reactive behavior
@@ -287,6 +287,11 @@ def make_env_cfg(
         params={"sensor_name": self_collision_cfg.name},
     )
 
+    # F1 (EXPERIMENTS.md): price a fall itself. E3's gait falls three times as
+    # often in training as E2's; a fall only cost the reward it forfeits. Scaled
+    # by dt like every term, -250 charges -5 once per fall (not on timeouts).
+    cfg.rewards["termination"] = RewardTermCfg(func=mdp.is_terminated, weight=-250.0)
+
 
     # air_time window [0.125, 0.300] s. NOTE: standing still at zero command is
     # taught by the standing_envs curriculum (→25% standing envs by ~iter 2000),
@@ -331,7 +336,7 @@ def make_env_cfg(
     # pays linearly for speed down the lane up to v_ref, whatever the command.
     cfg.rewards["lane_progress"] = RewardTermCfg(
         func=sprint_rewards.lane_progress,
-        weight=10.0,  # E3: 5 → 10, a stronger pull for speed once the caps are gone
+        weight=20.0,  # E3: 5 → 10; F2: 10 → 20
         params={"v_ref": 2.0, "command_name": "twist", "command_threshold": 0.01},
     )
 
@@ -395,9 +400,6 @@ def make_env_cfg(
                 "asset_cfg": SceneEntityCfg("robot"),
             },
         )
-    else:
-        # The base velocity config has its own push_robot (every 1-3 s): drop it too.
-        cfg.events.pop("push_robot", None)
 
     # Domain randomization — re-sampled per episode at reset. In mjlab 1.3.0 the
     # stock dr.* ops with operation="add"/"scale" read from the compile-time
