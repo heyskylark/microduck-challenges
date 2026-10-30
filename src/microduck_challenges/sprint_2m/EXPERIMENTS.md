@@ -31,10 +31,15 @@ together.
 | F2-prog20 | 1fa4af8 | E3 + `lane_progress` weight 10 → 20 | 800 | 1.504 s | 5/5 | 0.60 | = E3; collapses after 800 |
 | F3-e3-s2 | 77d3ff3 | E3, seed 2 | 1000 | 1.483 s | 5/5 | 1.15 | replicates E3 (1.48–1.49) |
 | **F4-nopush** | cd446bf | E3 + pushes off | 1400 | **1.464 s** | 5/5 | 1.05 | −0.03 s vs E3, but 9 of 20 checkpoints fall |
-| G1-prog20-fallpen | 9901f67 | F2 + F1 (progress 20 + fall penalty) | running | | | | |
-| G2-com5 | 350496a | E3 + CoM randomization capped at ±5 mm | running | | | | |
-| G3-stand2 | 4087290 | E3 + standing envs held at 2% | running | | | | |
-| G4-com5-stand2 | 274fc1b | E3 + G2 + G3 (both, on purpose) | running | | | | |
+| G1-prog20-fallpen | 9901f67 | F2 + F1 (progress 20 + fall penalty) | 800 | 1.509 s | 5/5 | 0.85 | = F2: the penalty does not tame progress 20 |
+| G2-com5 | 350496a | E3 + CoM randomization capped at ±5 mm | 1200 | 1.521 s | 5/5 | 0.80 | = E3: dropped |
+| **G3-stand2** | 4087290 | E3 + standing envs held at 2% | 1300 | **1.438 s** | 5/5 | 1.05 | −0.05 s vs E3; 1.41–1.47 s at every vx |
+| G4-com5-stand2 | 274fc1b | E3 + G2 + G3 (both, on purpose) | 1200 | 1.440 s | 5/5 | 0.45 | = G3 |
+| H1, H2, H4 | c0142ed, d840bfa, b7fe5da | G3 + fall penalty −1000 / γ 0.995 / fall penalty −250 | stopped < 100 | | | | premise refuted (see below) |
+| H3-g3-s2 | 6045e42 | G3, seed 2 | running | | | | |
+| I1-heading015 | 37cc525 | G3 + `heading_hold` std 0.4 → 0.15 rad | running | | | | |
+| I2-mirror | 0fff47a | G3 + mirror-symmetry loss | running | | | | |
+| I3-lanedrift | 4b29b33 | G3 + `lane_drift` (sideways speed across the lane) | running | | | | |
 
 Pollen reference: 4.883 s at 0.55 m/s.
 
@@ -219,3 +224,42 @@ Four single changes on E3, run together.
 - **Reading**: progress 10 is the right weight; the problem is now holding the gait late in training. Next (G):
   F1 + F2 together (does the penalty tame progress 20?), and the two curricula behind the late decline, one at a
   time and together.
+
+### The G batch: holding the gait late (commits 9901f67, 350496a, 4087290, 274fc1b)
+- **G1 (progress 20 + fall penalty −250)**: best 1.509 s at 800, then 3/5–4/5 at every checkpoint after it; training
+  falls climb back to 3.7 by 1999. The penalty does not tame progress 20.
+- **G2 (CoM randomization capped at ±5 mm)**: best 1.521 s at 1200; still fails at 1000, 1600–1800 and 1999. No gain on E3.
+- **G3 (standing envs held at 2%, was ramped to 25%)**: 5/5 at every checkpoint from 300 to 1300, best **1.438 s
+  at 1300** with **1.41–1.47 s at all 21 commands**. Then 4/5, 4/5, 1/5, 3/5, 4/5, 4/5, 2/5 from 1400 to 1999.
+- **G4 (both)**: same as G3 to 1200 (1.440 s), fails from 1300 on.
+- **Reading**: holding standing envs at 2% is a small gain (the Arena never commands 0, so that share of training
+  was wasted), kept. Neither curriculum is behind the late failures, though.
+
+### Why late checkpoints fail: the lane wall (trace analysis)
+The Arena's evaluation stores the trunk trajectory of one seed (`trace_b64` in `workshop/model_<N>.json`: trunk
+position, quaternion, joints per frame). Decoded, it shows **every fast gait drifting sideways, mostly to the
+right**: by the line the trunk is at y ≈ −0.33 m, with a mean yaw of −5° to −15°. The lane is 0.8 m wide (walls at
+±0.4 m), so with the legs ~6 cm to either side of the trunk, these runs **touch the right wall at the line**.
+The failing checkpoints hit it before the line and fall: G4's 1300 ends at yaw −81° and tilt 25°. G3's checkpoint
+1300 (best) ends at y −0.33 with a 1.44 s finish; from 1400 on its trace runs sit at −0.33 with yaw −7° to −15°, and
+its seeds fall. In E2 the drift is sometimes to the left (+0.27 at 1800): it is not a fixed asymmetry of the
+robot but a yaw bias each policy picks up.
+
+Training has no walls, so a drift costs almost nothing there: `heading_hold` (std 0.4 rad) keeps 98.5% of its
+reward at a 5° error and `lane_progress` loses cos 5° = 0.4%. The faster the gait, the further a given yaw
+carries it in 2 m, so the late, fastest checkpoints are the ones that reach the wall.
+
+This refutes the premise of H1, H2 and H4 (fall penalty −1000, γ 0.995, fall penalty −250 on G3: "the policy
+trades balance for speed"). They were stopped before checkpoint 100. H3 (G3 on seed 2) was kept as a
+replication. `logs/analysis/report.py` now prints each checkpoint's end y and mean yaw.
+
+### The I batch: straightness (commits 37cc525, 0fff47a, 4b29b33), on G3
+- **I1**: `heading_hold` std 0.4 → 0.15 rad: a 5° heading error costs 29% of the term instead of 1.5%.
+- **I2**: `ENABLE_SYMMETRY` (the package's mirror loss, coefficient 0.5): a left/right-mirrored policy has no
+  built-in turn.
+- **I3**: new `lane_drift` = 2 · exp(−v_lat² / 0.15²), v_lat the trunk's world velocity across the spawn heading:
+  prices drifting off the centre line whether by yawing or by crabbing. 0.2 m/s across (what reaches the wall
+  by the line) keeps 17% of it.
+
+(Commit 1575f8c, named "I1", only restored G3's env: its edit failed. Its run was deleted at iteration 19 and
+I1 relaunched from 37cc525.)
