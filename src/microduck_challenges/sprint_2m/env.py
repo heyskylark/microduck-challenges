@@ -253,6 +253,13 @@ def make_env_cfg(
     # affordable.
     cfg.rewards["upright"].weight = knobs["upright_reward"]
     cfg.rewards["upright"].params["std"] = math.sqrt(0.05)
+    # Lean into the run (EXPERIMENTS.md, B1): a forward (nose-down) lean's
+    # std² widens 0.05 → 0.3 as lane speed goes 0.3 → 0.8 m/s. A 15° lean then
+    # keeps 1.6 of 2.0 instead of 0.5. Roll and backward lean keep std² 0.05.
+    cfg.rewards["upright"].func = sprint_rewards.upright_lean
+    cfg.rewards["upright"].params.update(
+        {"lean_std": math.sqrt(0.3), "speed_lo": 0.3, "speed_hi": 0.8}
+    )
 
     # Foot-specific configurations. In mjlab 1.3.0 foot_swing_height is fully
     # sensor-driven (no asset_cfg); only foot_clearance/foot_slip still carry an
@@ -292,15 +299,9 @@ def make_env_cfg(
     cfg.rewards["body_ang_vel"].weight = -0.05
     cfg.rewards["angular_momentum"].weight = -0.02
 
-    # Velocity tracking rewards. track_linear_velocity no longer tracks the
-    # forward command while walking (EXPERIMENTS.md, A3): forward speed is
-    # lane_progress's alone, so a low command no longer says "slow down". It
-    # still prices sideways and vertical speed, and a standing env's v_x.
-    cfg.rewards["track_linear_velocity"].func = sprint_rewards.track_lateral_velocity
-    cfg.rewards["track_linear_velocity"].params = {
-        "std": math.sqrt(0.1), "command_name": "twist", "command_threshold": 0.01,
-    }
+    # Velocity tracking rewards
     cfg.rewards["track_linear_velocity"].weight = knobs["forward_reward"]
+    cfg.rewards["track_linear_velocity"].params["std"] = math.sqrt(0.1)
     cfg.rewards["track_angular_velocity"].weight = 2.0
     cfg.rewards["track_angular_velocity"].params["std"] = math.sqrt(0.5)
 
@@ -329,7 +330,7 @@ def make_env_cfg(
     )
 
     # Action smoothness: stage-0 value; the action_rate_weight curriculum below
-    # ramps it -0.1 → -1.0 by iter 1500.
+    # ramps it -0.1 → -0.3 by iter 750.
     cfg.rewards["action_rate_l2"].weight = -0.1
 
     cfg.rewards["foot_clearance"].params["command_threshold"] = 0.01
@@ -727,7 +728,8 @@ def make_env_cfg(
     cfg.scene.terrain.terrain_generator = None
 
     # action_rate weight ramp: gentle smoothing while the gait bootstraps, then
-    # tighten to -1.0 by iter 1500.
+    # capped at -0.3 (EXPERIMENTS.md, B2; was -1.0 by iter 1500): in A1 and A2
+    # the Arena score was best at 700-1000 and worsened as this ramp tightened.
     cfg.curriculum["action_rate_weight"] = CurriculumTermCfg(
         func=microduck_mdp.reward_weight,
         params={
@@ -735,10 +737,7 @@ def make_env_cfg(
             "weight_stages": [
                 {"step": 0, "weight": -0.1},
                 {"step": 500 * NUM_STEPS_PER_ENV, "weight": -0.2},
-                {"step": 750 * NUM_STEPS_PER_ENV, "weight": -0.4},
-                {"step": 1000 * NUM_STEPS_PER_ENV, "weight": -0.6},
-                {"step": 1250 * NUM_STEPS_PER_ENV, "weight": -0.8},
-                {"step": 1500 * NUM_STEPS_PER_ENV, "weight": -1.0},
+                {"step": 750 * NUM_STEPS_PER_ENV, "weight": -0.3},
             ],
         },
     )
