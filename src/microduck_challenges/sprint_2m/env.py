@@ -42,7 +42,7 @@ ENABLE_MASS_INERTIA_RANDOMIZATION = True  # Can enable once walking is stable
 ENABLE_JOINT_FRICTION_RANDOMIZATION = True  # Scales BAM's friction budget per-env via FrictionDRBamActuator.friction_scale
 ENABLE_JOINT_DAMPING_RANDOMIZATION = False
 ENABLE_ARMATURE_RANDOMIZATION = True  # Reflected rotor inertia (microban-style). DOES affect BAM (armature is set, not zeroed).
-ENABLE_VELOCITY_PUSHES = True  # Velocity-based pushes for robustness training
+ENABLE_VELOCITY_PUSHES = False  # F4 (EXPERIMENTS.md): the Arena never pushes
 ENABLE_IMU_ORIENTATION_RANDOMIZATION = True  # Simulates mounting errors
 ENABLE_ENCODER_BIAS = True  # Per-env joint encoder calibration offset (actor obs sees joint_pos + bias)
 ENABLE_BASE_ORIENTATION_RANDOMIZATION = False  # Randomize initial tilt to force reactive behavior
@@ -331,7 +331,7 @@ def make_env_cfg(
     # pays linearly for speed down the lane up to v_ref, whatever the command.
     cfg.rewards["lane_progress"] = RewardTermCfg(
         func=sprint_rewards.lane_progress,
-        weight=20.0,  # E3: 5 → 10; F2: 10 → 20
+        weight=10.0,  # E3: 5 → 10, a stronger pull for speed once the caps are gone
         params={"v_ref": 2.0, "command_name": "twist", "command_threshold": 0.01},
     )
 
@@ -395,6 +395,9 @@ def make_env_cfg(
                 "asset_cfg": SceneEntityCfg("robot"),
             },
         )
+    else:
+        # The base velocity config has its own push_robot (every 1-3 s): drop it too.
+        cfg.events.pop("push_robot", None)
 
     # Domain randomization — re-sampled per episode at reset. In mjlab 1.3.0 the
     # stock dr.* ops with operation="add"/"scale" read from the compile-time
