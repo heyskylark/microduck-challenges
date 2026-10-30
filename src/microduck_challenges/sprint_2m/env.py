@@ -803,11 +803,10 @@ def make_env_cfg(
                     # support, forcing a wide/fast hyper-reactive gait and making
                     # BACKWARD balance untrainable. Regression timeline matched the
                     # ramp increases: 0.015 → 0.02 → 0.03 as policies got worse.
-                    # G2 (EXPERIMENTS.md): capped at ±5 mm. Every E3-like run
-                    # fell more and slowed at the 1000/1500 steps of this ramp;
-                    # the Arena simulates the nominal CoM (0, inside the range).
                     {"step": 0,          "range": 0.003},
                     {"step": 500 * 24,  "range": 0.005},
+                    {"step": 1000 * 24,  "range": 0.01},
+                    {"step": 1500 * 24,  "range": 0.015},
                 ],
             },
         )
@@ -822,7 +821,8 @@ def make_env_cfg(
                     # Capped at ±10 mm (2026-07 audit — same over-conservatism
                     # concern as trunk CoM; head is a large lever arm).
                     {"step": 0,          "range": 0.003},
-                    {"step": 500 * 24,  "range": 0.005},  # G2: capped at ±5 mm
+                    {"step": 500 * 24,  "range": 0.005},
+                    {"step": 1000 * 24,  "range": 0.01},
                 ],
             },
         )
