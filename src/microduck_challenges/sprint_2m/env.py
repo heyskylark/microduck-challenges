@@ -331,7 +331,7 @@ def make_env_cfg(
     # pays linearly for speed down the lane up to v_ref, whatever the command.
     cfg.rewards["lane_progress"] = RewardTermCfg(
         func=sprint_rewards.lane_progress,
-        weight=5.0,
+        weight=10.0,  # E3: 5 → 10, a stronger pull for speed once the caps are gone
         params={"v_ref": 2.0, "command_name": "twist", "command_threshold": 0.01},
     )
 
