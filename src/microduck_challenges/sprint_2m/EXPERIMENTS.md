@@ -23,6 +23,10 @@ together.
 | **B4-head** | 5f6d00f | B2 + head freed at speed | 1900 | **1.824 s** | 5/5 | 1.20 | −0.33 s vs B2 |
 | D1-atleast | 9870cb4 | B2 + forward tracking one-sided (no cap above the command) | 1999 | 1.874 s | 5/5 | 1.20 | −0.28 s vs B2 |
 | E1-combo | 14a07a0 | B2 + D1 + B1, 3000 iterations | 2600 | 1.871 s | 5/5 | 1.20 | = D1: B1 adds nothing on D1, flat from 1500 |
+| E2-stack-s1 | c8deff2 | B2 + D1 + B1 + B4 (seed 1) | running | | | | |
+| E2-stack-s2 | c8deff2 | same, seed 2 | running | | | | |
+| E3-prog10 | 263f189 | E2 + `lane_progress` weight 5 → 10 | running | | | | |
+| E4-runpose | 5bc6ec8 | E2 + `pose` running tolerance from 0.6 m/s | running | | | | |
 
 Pollen reference: 4.883 s at 0.55 m/s.
 
