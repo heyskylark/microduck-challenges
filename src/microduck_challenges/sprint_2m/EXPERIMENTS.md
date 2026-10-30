@@ -17,11 +17,12 @@ together.
 | A1-fwd4 | 7a33a51 | `forward_reward` 2 → 4 | 700 | 2.802 s | 5/5 | 0.80 | −2.00 s vs run0 |
 | A2-progress | 368ffa2 | + `lane_progress` (w 5, v_ref 2.0), forward back at 2 | 700 | 2.882 s | 5/5 | 0.90 | −1.92 s vs run0; more robust than A1 |
 | **B2-rate03** | 37d71dd | A2 + `action_rate_l2` ramp capped at −0.3 | 1999 | **2.156 s** | 5/5 | 1.20 | −0.73 s vs A2; finishes at every vx |
-| B3-rock | dc198f3 | B2 + roll/pitch rate tolerance std² 0.5 → 1.5 | running | | | | |
+| B3-rock | dc198f3 | B2 + roll/pitch rate tolerance std² 0.5 → 1.5 | 1999 | 2.203 s | 5/5 | 1.20 | +0.05 s vs B2: no gain, dropped |
 | A3-nofwdtrack | 2540a2a | A2 + `track_linear_velocity` without vx | 1000 (stopped) | 5.022 s | 5/5 | 0.70 | +2.14 s vs A2: refuted |
 | B1-lean | 18905d7 | B2 + forward lean allowed with speed | 1900 | 2.124 s | 5/5 | 1.20 | −0.03 s vs B2: small, kept |
-| B4-head | 5f6d00f | B2 + head freed at speed | running | | | | |
-| D1-atleast | 9870cb4 | B2 + forward tracking one-sided (no cap above the command) | running | | | | |
+| **B4-head** | 5f6d00f | B2 + head freed at speed | 1900 | **1.824 s** | 5/5 | 1.20 | −0.33 s vs B2 |
+| D1-atleast | 9870cb4 | B2 + forward tracking one-sided (no cap above the command) | 1999 | 1.874 s | 5/5 | 1.20 | −0.28 s vs B2 |
+| E1-combo | 14a07a0 | B2 + D1 + B1, 3000 iterations | 2600 | 1.871 s | 5/5 | 1.20 | = D1: B1 adds nothing on D1, flat from 1500 |
 
 Pollen reference: 4.883 s at 0.55 m/s.
 
@@ -102,3 +103,46 @@ Pollen reference: 4.883 s at 0.55 m/s.
   `pose` 0.36 (B2 0.40: bigger strides), peak foot height 23 mm.
 - **Reading**: a small gain, ahead of B2 at each of the last five checkpoints, so kept; with one seed it
   is within noise. It does not add falls in the Arena.
+
+### B3-rock: roll/pitch rates loosened (commit dc198f3)
+- **Hypothesis**: on B2, a separate, looser tolerance for roll/pitch rotation speed (std² 0.5 → 1.5, yaw kept at
+  0.5) stops taxing each stride's rocking and frees a faster gait.
+- **Score per checkpoint**: tracks B2 checkpoint for checkpoint, 0.05–0.1 s behind until 1300, then level:
+  1500 2.33 · 1700 2.26 · 1800 2.23 · 1900 2.22 · **1999 2.20** (B2 1999: 2.16).
+- **Curves at the end**: `track_angular_velocity` 0.74 (B2 0.44): the term pays more, but the gait is the same
+  (air time, foot height, lane_progress all match B2).
+- **Reading**: no gain, dropped. The rocking tax was not what held speed back; the policy just collects the
+  freed reward.
+
+### D1-atleast: one-sided forward tracking (commit 9870cb4)
+- **Hypothesis**: on B2, charging only for falling short of the forward command (`max(cmd_x − v_x, 0)` in the bell
+  curve) keeps tracking's strong pull without its cap at 1.2 m/s.
+- **Score per checkpoint**: 800 2.39 · 900 2.30 · 1000 2.16 · 1100 11.8 (4/5) · 1200 2.05 · 1300 2.04 · 1400 1.94 ·
+  1500 1.89 · 1600 1.93 · 1700 2.00 · 1800 1.91 · 1900 1.92 · **1999 1.87**.
+- **Sweep of checkpoint 1999**: 1.87–2.35 s at every vx from 0.25 to 1.20, so it runs near full speed whatever the
+  command; it falls only at 0.20. 0.80 m/s takes 2.55 s, an outlier.
+- **Curves at the end**: `lane_progress` 1.35/s (B2 1.13), peak foot height 28 mm (B2 23), `pose` 0.24 (B2 0.40),
+  fell_over 0.40 (B2 0.30).
+- **Reading**: confirmed. With no cap above the command, the policy settles on one fast gait. It strides
+  further from the home pose (`pose` keeps dropping), which suggests `pose` is now one of the brakes (E4). It falls
+  a bit more in training, but finishes 5/5 at 20 of the 21 commands in the Arena.
+
+### B4-head: head freed at speed (commit 5f6d00f)
+- **Hypothesis**: on B2, widening the head's tolerance (0.5 → 1.0 rad) and fading out `head_pose_bias` as lane
+  speed goes 0.3 → 0.8 m/s lets the 280 g head (38% of the mass) act as a counterweight.
+- **Score per checkpoint**: ahead of B2 at every checkpoint from 600 on: 700 2.40 · 900 2.20 · 1000 2.11 · 1200 2.03 ·
+  1300 1.96 · 1400 1.94 · 1600 1.91 · 1800 1.83 · **1900 1.82** · 1999 1.86.
+- **Sweep of checkpoint 1900**: finishes at every vx and gets faster with vx, as B2 does, from 4.11 s at 0.20 to
+  **1.79 s at 1.20** (seed 1).
+- **Curves at the end**: `lane_progress` 1.23/s (B2 1.13), `head_pose_bias` −0.12 (B2 −0.17), fell_over 0.35.
+- **Reading**: confirmed, the best single change. Still tracks the command, so it stacks naturally with D1.
+
+### E1-combo: D1 + B1, 3000 iterations (commit 14a07a0)
+- **Hypothesis**: the D1 and B1 gains add up, and training 3000 iterations gains more, since B2/B1 were still
+  improving at 2000.
+- **Score per checkpoint**: 1000 2.31 · 1300 2.14 · 1500 1.95 · 1800 1.90 · 2100 1.88 · 2300 1.89 · **2600 1.87** ·
+  2900 1.90 · 2999 1.96. Flat at 1.87–1.99 from 1500 on.
+- **Sweep of checkpoint 2600**: 1.88–2.50 s at every vx, all finishing (D1's fall at 0.20 is gone).
+- **Reading**: no gain on D1, and 1000 more iterations add nothing: this gait levels off around 1.87 s. B1 is
+  kept as harmless (it fixes D1's 0.20 fall in this run), but the next gain has to come from elsewhere:
+  the head (B4), stride freedom (`pose`), or the progress weight.
