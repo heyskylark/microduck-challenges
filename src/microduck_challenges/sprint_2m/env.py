@@ -31,7 +31,7 @@ from copy import deepcopy
 NUM_STEPS_PER_ENV = 24
 
 # Symmetry
-ENABLE_SYMMETRY = False
+ENABLE_SYMMETRY = True  # I2 (EXPERIMENTS.md): mirror loss, against the rightward drift
 
 # Domain randomization toggles
 ENABLE_COM_RANDOMIZATION = True
@@ -319,13 +319,10 @@ def make_env_cfg(
     # heading (the roller's term and std): the policy cannot see its heading,
     # but it can learn to null its gait's mean yaw rate. The critic sees the
     # heading error (heading_error, below) so it can value what this term pays.
-    # I1 (EXPERIMENTS.md): std 0.4 → 0.15 rad. The fast gaits walk at a −5°
-    # yaw and reach the lane's right wall (y ≈ −0.33 of ±0.4 m) by the line:
-    # at std 0.4 a 5° error kept 98.5% of this term, at 0.15 it keeps 71%.
     cfg.rewards["heading_hold"] = RewardTermCfg(
         func=microduck_mdp.heading_hold_reward,
         weight=1.0,
-        params={"std": 0.15, "asset_cfg": SceneEntityCfg("robot")},
+        params={"std": 0.4, "asset_cfg": SceneEntityCfg("robot")},
     )
 
     # Speed paid for itself (EXPERIMENTS.md, A2). track_linear_velocity is a
