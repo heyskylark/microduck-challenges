@@ -20,6 +20,7 @@ together.
 | B3-rock | dc198f3 | B2 + roll/pitch rate tolerance std² 0.5 → 1.5 | running | | | | |
 | A3-nofwdtrack | 2540a2a | A2 + `track_linear_velocity` without vx | 1000 (stopped) | 5.022 s | 5/5 | 0.70 | +2.14 s vs A2: refuted |
 | B1-lean | 18905d7 | B2 + forward lean allowed with speed | running | | | | |
+| D1-atleast | 9870cb4 | B2 + forward tracking one-sided (no cap above the command) | running | | | | |
 
 Pollen reference: 4.883 s at 0.55 m/s.
 
