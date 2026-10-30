@@ -17,7 +17,8 @@ together.
 | A1-fwd4 | 7a33a51 | `forward_reward` 2 → 4 | 700 | 2.802 s | 5/5 | 0.80 | −2.00 s vs run0 |
 | A2-progress | 368ffa2 | + `lane_progress` (w 5, v_ref 2.0), forward back at 2 | 700 | 2.882 s | 5/5 | 0.90 | −1.92 s vs run0; more robust than A1 |
 | B2-rate03 | 37d71dd | A2 + `action_rate_l2` ramp capped at −0.3 | running | | | | |
-| A3-nofwdtrack | 2540a2a | A2 + `track_linear_velocity` without vx | running | | | | |
+| A3-nofwdtrack | 2540a2a | A2 + `track_linear_velocity` without vx | 1000 (stopped) | 5.022 s | 5/5 | 0.70 | +2.14 s vs A2: refuted |
+| B1-lean | 18905d7 | B2 + forward lean allowed with speed | running | | | | |
 
 Pollen reference: 4.883 s at 0.55 m/s.
 
@@ -57,3 +58,15 @@ Pollen reference: 4.883 s at 0.55 m/s.
 - **Reading**: confirmed. The score matches A1's, but there are 4/5 checkpoints from 500 on and a gait that holds at
   every high command, so A2 is the base to stack on. Like A1, it slows from 1000 on: average lane speed falls
   while `action_rate_l2` tightens. Next: B2 (cap that ramp) and A3 (drop vx tracking), in parallel.
+
+### A3-nofwdtrack: track_linear_velocity without vx (commit 2540a2a), stopped at 1000
+- **Hypothesis**: on A2, dropping the forward part of speed tracking removes the command's cap on speed, so
+  every env runs at full pace.
+- **Score per checkpoint**: 0–300 50 (0/5) · 400 23.3 · 500 50 (0/5) · 600 25.2 · 700 8.87 · 800 9.45 · 900 5.62 ·
+  **1000 5.02**. A2 at the same checkpoints: 2.94–3.22.
+- **Curves at 1000**: `lane_progress` 0.65/s (A2: 1.09/s), so it is slower in training too. `track_linear_velocity`
+  without vx pays 1.56 of 2.0 for nearly nothing.
+- **Reading**: refuted, and stopped at 1000 to free the GPU. The bell curve around the command was the
+  strongest "go" signal: near a command it pays about 2·2·err/0.1 per m/s, against lane_progress's flat
+  2.5 per m/s. Ignoring the command needs a stronger progress term. To retest only if progress weight ≥ 10
+  turns out to be worth it.
