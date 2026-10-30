@@ -1,4 +1,4 @@
-"""The sprint's own reward terms (see EXPERIMENTS.md for the run that introduced each).
+"""The sprint's own reward and termination terms (see EXPERIMENTS.md for the run that introduced each).
 
 Speed here is `lane_speed`: the trunk's world velocity along the heading the robot spawned with.
 That is progress down the lane the Arena measures, not along wherever the nose points, so walking
@@ -21,6 +21,29 @@ _ROBOT = SceneEntityCfg("robot")
 def _yaw(quat: torch.Tensor) -> torch.Tensor:
     w, x, y, z = quat.unbind(-1)
     return torch.atan2(2.0 * (w * z + x * y), 1.0 - 2.0 * (y * y + z * z))
+
+
+def lane_wall(env: ManagerBasedRlEnv, half_width: float, length: float) -> torch.Tensor:
+    """True once the trunk is more than `half_width` off the spawn line within the first `length` m of it.
+
+    The Arena's lane has walls at ±0.4 m that a drifting duck hits and falls on; training is an open
+    plane. This ends the episode where that wall would. The line is the spawn position and heading,
+    captured on an episode's first step; past `length` m down it the lane is over, as in the race.
+    """
+    asset = env.scene[_ROBOT.name]
+    pos = asset.data.root_link_pos_w[:, :2]
+    yaw = _yaw(asset.data.root_link_quat_w)
+    if not hasattr(env, "_wall_origin") or env._wall_origin.shape[0] != env.num_envs:
+        env._wall_origin = pos.clone()
+        env._wall_heading = yaw.clone()
+    fresh = env.episode_length_buf <= 1
+    env._wall_origin = torch.where(fresh.unsqueeze(-1), pos, env._wall_origin)
+    env._wall_heading = torch.where(fresh, yaw, env._wall_heading)
+    d = pos - env._wall_origin
+    c, s = torch.cos(env._wall_heading), torch.sin(env._wall_heading)
+    along = d[:, 0] * c + d[:, 1] * s
+    lateral = -d[:, 0] * s + d[:, 1] * c
+    return (lateral.abs() > half_width) & (along < length) & ~fresh
 
 
 def lane_speed(env: ManagerBasedRlEnv) -> torch.Tensor:

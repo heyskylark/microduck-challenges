@@ -325,16 +325,6 @@ def make_env_cfg(
         params={"std": 0.4, "asset_cfg": SceneEntityCfg("robot")},
     )
 
-    # I3 (EXPERIMENTS.md): price sideways speed across the lane, from yaw or
-    # crabbing. The fast gaits reach y ≈ −0.33 m of the ±0.4 m walls by the
-    # line (≈ 0.2 m/s across at 1.4 m/s); std 0.15 m/s keeps 17% of the term
-    # at 0.2 m/s across, 64% at 0.1.
-    cfg.rewards["lane_drift"] = RewardTermCfg(
-        func=sprint_rewards.lane_drift,
-        weight=2.0,
-        params={"std": 0.15, "command_name": "twist", "command_threshold": 0.01},
-    )
-
     # Speed paid for itself (EXPERIMENTS.md, A2). track_linear_velocity is a
     # bell curve around the command (std² 0.1): a robot 0.6 m/s short of a
     # 1.2 m/s command earns ~0 and feels no pull to go faster. lane_progress
@@ -384,6 +374,16 @@ def make_env_cfg(
         func=microduck_mdp.robot_state_is_nan,
         time_out=False,
         params={"sensor_names": (feet_ground_cfg.name,)},
+    )
+
+    # J1 (EXPERIMENTS.md): the Arena lane's walls are at ±0.4 m, and late
+    # checkpoints fail by drifting into them; training is an open plane. End
+    # the episode where the wall would be: trunk 0.3 m off the spawn line
+    # within the first 2.5 m of it (legs ~6 cm wide of the trunk).
+    cfg.terminations["lane_wall"] = TerminationTermCfg(
+        func=sprint_rewards.lane_wall,
+        time_out=False,
+        params={"half_width": 0.3, "length": 2.5},
     )
 
     cfg.events["reset_base"].params["pose_range"]["z"] = (0.12, 0.13)
