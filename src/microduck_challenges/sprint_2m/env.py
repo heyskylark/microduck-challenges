@@ -292,15 +292,9 @@ def make_env_cfg(
     cfg.rewards["body_ang_vel"].weight = -0.05
     cfg.rewards["angular_momentum"].weight = -0.02
 
-    # Velocity tracking rewards. Forward speed is tracked one-sided while
-    # walking (EXPERIMENTS.md, D1): falling short of the command costs as the
-    # bell curve always did, going faster than it costs nothing. B2 ran fastest
-    # at the top command, 1.2 m/s, and the two-sided curve capped it there.
-    cfg.rewards["track_linear_velocity"].func = sprint_rewards.track_linear_velocity_at_least
-    cfg.rewards["track_linear_velocity"].params = {
-        "std": math.sqrt(0.1), "command_name": "twist", "command_threshold": 0.01,
-    }
+    # Velocity tracking rewards
     cfg.rewards["track_linear_velocity"].weight = knobs["forward_reward"]
+    cfg.rewards["track_linear_velocity"].params["std"] = math.sqrt(0.1)
     cfg.rewards["track_angular_velocity"].weight = 2.0
     cfg.rewards["track_angular_velocity"].params["std"] = math.sqrt(0.5)
 
@@ -685,10 +679,13 @@ def make_env_cfg(
     # std=0.5 with per-joint Gaussian (see head_pose_tracking in mdp.py). Final
     # reward is the mean over 4 joints, so partial tracking is partial reward
     # (no all-or-nothing).
+    # B4 (EXPERIMENTS.md): the head's tolerance widens 0.5 → 1.0 rad as lane
+    # speed goes 0.3 → 0.8 m/s, so a running duck may swing its 280 g head.
     cfg.rewards["head_pose_tracking"] = RewardTermCfg(
-        func=microduck_mdp.head_pose_tracking,
+        func=sprint_rewards.head_pose_tracking_at_speed,
         weight=2.0,
-        params={"command_name": "head_pose", "std": 0.5},
+        params={"command_name": "head_pose", "std": 0.5, "fast_std": 1.0,
+                "speed_lo": 0.3, "speed_hi": 0.8},
     )
     # body_pose: infra kept intact but DISABLED (weight 0) — the obs slot and
     # command stay alive for envs that raise the weight (standup).
@@ -716,10 +713,12 @@ def make_env_cfg(
     # The DC bias, unlike the oscillation, IS escapable (bias the neck command up
     # to cancel gravity sag), so price only that: L1 on a 1 s EMA of the error.
     # At the optimum this costs a walking policy nothing.
+    # B4: the bias charge fades out over the same speeds, so a running duck may
+    # hold its head forward or back as a counterweight.
     cfg.rewards["head_pose_bias"] = RewardTermCfg(
-        func=microduck_mdp.head_pose_bias_penalty,
+        func=sprint_rewards.head_pose_bias_at_rest,
         weight=0.0,  # ramped by the head_pose_bias_weight curriculum below
-        params={"command_name": "head_pose", "tau_s": 1.0},
+        params={"command_name": "head_pose", "tau_s": 1.0, "speed_lo": 0.3, "speed_hi": 0.8},
     )
 
     # Terrain: the sprint's lane is flat.
