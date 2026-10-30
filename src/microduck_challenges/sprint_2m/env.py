@@ -31,7 +31,7 @@ from copy import deepcopy
 NUM_STEPS_PER_ENV = 24
 
 # Symmetry
-ENABLE_SYMMETRY = True  # I2 (EXPERIMENTS.md): mirror loss, against the rightward drift
+ENABLE_SYMMETRY = False
 
 # Domain randomization toggles
 ENABLE_COM_RANDOMIZATION = True
@@ -323,6 +323,16 @@ def make_env_cfg(
         func=microduck_mdp.heading_hold_reward,
         weight=1.0,
         params={"std": 0.4, "asset_cfg": SceneEntityCfg("robot")},
+    )
+
+    # I3 (EXPERIMENTS.md): price sideways speed across the lane, from yaw or
+    # crabbing. The fast gaits reach y ≈ −0.33 m of the ±0.4 m walls by the
+    # line (≈ 0.2 m/s across at 1.4 m/s); std 0.15 m/s keeps 17% of the term
+    # at 0.2 m/s across, 64% at 0.1.
+    cfg.rewards["lane_drift"] = RewardTermCfg(
+        func=sprint_rewards.lane_drift,
+        weight=2.0,
+        params={"std": 0.15, "command_name": "twist", "command_threshold": 0.01},
     )
 
     # Speed paid for itself (EXPERIMENTS.md, A2). track_linear_velocity is a

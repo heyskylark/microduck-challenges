@@ -58,6 +58,29 @@ def lane_progress(
     return torch.clamp(speed, 0.0, v_ref) / v_ref * active.float()
 
 
+def lane_drift(
+    env: ManagerBasedRlEnv,
+    std: float,
+    command_name: str = "twist",
+    command_threshold: float = 0.01,
+) -> torch.Tensor:
+    """exp(-v_lat² / std²), v_lat the trunk's world velocity across the spawn heading (m/s).
+
+    Prices walking off the lane's centre line, whether by yawing or by crabbing. Zero for a
+    standing env, which tracks v = 0 already.
+    """
+    lane_speed(env)  # keeps env._lane_heading current
+    asset = env.scene[_ROBOT.name]
+    vel = asset.data.root_link_lin_vel_w[:, :2]
+    heading = env._lane_heading
+    v_lat = -vel[:, 0] * torch.sin(heading) + vel[:, 1] * torch.cos(heading)
+    command = env.command_manager.get_command(command_name)
+    active = torch.norm(command[:, :2], dim=1) > command_threshold
+    if active.any():
+        env.extras["log"]["Metrics/lane_drift_abs_mean"] = v_lat[active].abs().mean()
+    return torch.exp(-torch.square(v_lat) / std**2) * active.float()
+
+
 def track_lateral_velocity(
     env: ManagerBasedRlEnv,
     std: float,
