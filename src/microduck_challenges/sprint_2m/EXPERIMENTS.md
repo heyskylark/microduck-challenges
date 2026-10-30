@@ -36,10 +36,14 @@ together.
 | **G3-stand2** | 4087290 | E3 + standing envs held at 2% | 1300 | **1.438 s** | 5/5 | 1.05 | −0.05 s vs E3; 1.41–1.47 s at every vx |
 | G4-com5-stand2 | 274fc1b | E3 + G2 + G3 (both, on purpose) | 1200 | 1.440 s | 5/5 | 0.45 | = G3 |
 | H1, H2, H4 | c0142ed, d840bfa, b7fe5da | G3 + fall penalty −1000 / γ 0.995 / fall penalty −250 | stopped < 100 | | | | premise refuted (see below) |
-| H3-g3-s2 | 6045e42 | G3, seed 2 | running | | | | |
-| I1-heading015 | 37cc525 | G3 + `heading_hold` std 0.4 → 0.15 rad | running | | | | |
-| I2-mirror | 0fff47a | G3 + mirror-symmetry loss | running | | | | |
-| I3-lanedrift | 4b29b33 | G3 + `lane_drift` (sideways speed across the lane) | running | | | | |
+| H3-g3-s2 | 6045e42 | G3, seed 2 | 1700 | 1.428 s | 5/5 | 1.10 | replicates G3's speed; 9 of 11 checkpoints from 1000 fall |
+| I1-heading015 | 37cc525 | G3 + `heading_hold` std 0.4 → 0.15 rad | 1100 | 1.497 s | 5/5 | 0.95 | no gain; still drifts to the wall |
+| **I2-mirror** | 0fff47a | G3 + mirror-symmetry loss | 1999 | **1.416 s** | 5/5 | 0.75 | −0.02 s vs G3; 7 of 11 late checkpoints 5/5 |
+| **I3-lanedrift** | 4b29b33 | G3 + `lane_drift` (sideways speed across the lane) | 1800 | **1.424 s** | 5/5 | 1.05 | −0.01 s vs G3; 9 of 11 late checkpoints 5/5 |
+| J1-wall | aa1ea89 | G3 + `lane_wall` termination (0.3 m, first 2.5 m) | running | | | | |
+| J2-drift-wall | 32984ef | I3 + `lane_wall` | running | | | | |
+| J3-mirror-wall | 13d0ccd | I2 + `lane_wall` | running | | | | |
+| J4-wall-s2 | 05ecd5b | J1, seed 2 | running | | | | |
 
 Pollen reference: 4.883 s at 0.55 m/s.
 
@@ -263,3 +267,23 @@ replication. `logs/analysis/report.py` now prints each checkpoint's end y and me
 
 (Commit 1575f8c, named "I1", only restored G3's env: its edit failed. Its run was deleted at iteration 19 and
 I1 relaunched from 37cc525.)
+
+Results, judged on how many checkpoints from 1000 on stay 5/5 (the late failures are what this batch is
+about), with the trace seed's end y (walls at ±0.4 m):
+
+| Run | Best | 5/5 among 1000–1999 | End y from 1000 on |
+|---|---|---|---|
+| G3 (seed 1) | 1.438 s @1300 | 4 of 11 | −0.24 to −0.33 |
+| H3 (G3, seed 2) | 1.428 s @1700 | 2 of 11 | +0.19 to +0.34 |
+| I1 heading std 0.15 | 1.497 s @1100 | 2 of 11 | +0.22 to +0.34 |
+| **I2 mirror loss** | **1.416 s @1999** | **7 of 11** | +0.11 to +0.33 |
+| **I3 lane_drift** | 1.424 s @1800 | **9 of 11** | +0.03 to +0.34, mostly ≤ 0.26 |
+
+- **I1 refuted**: a tighter heading tolerance does not stop the drift. `heading_hold` pays 0.22 of 1 throughout,
+  so the policy simply takes the loss.
+- **I2 confirmed**: the mirror loss gives the fastest checkpoint so far (1.416 s at 1999, 5/5 at 0.75 m/s) and
+  more 5/5 late checkpoints, but its trunk still ends at +0.27 to +0.33 m at most of them.
+- **I3 confirmed**: lane_drift keeps the end y lowest, and the most checkpoints 5/5. It learns speed more slowly
+  (2.59 s at 500 against G3's 1.79) and catches up by 1600 (1.48, 1.45, 1.42, 1.43). `lane_drift` pays 0.39 of 2
+  at the end: the gait still sways across the lane, so there is room for more.
+- Next (J): the wall itself as a termination, alone and on top of I2 and I3, and on a second seed.
