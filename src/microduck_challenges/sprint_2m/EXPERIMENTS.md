@@ -27,6 +27,10 @@ together.
 | E2-stack-s2 | c8deff2 | same, seed 2 | 1500 | 1.708 s | 5/5 | 1.20 | replicates E2 (1.71–1.74) |
 | **E3-prog10** | 263f189 | E2 + `lane_progress` weight 5 → 10 | 1800 | **1.494 s** | 5/5 | 0.85 | −0.23 s vs E2; ~1.5 s at every vx |
 | E4-runpose | 5bc6ec8 | E2 + `pose` running tolerance from 0.6 m/s | 1999 | 1.771 s | 5/5 | 1.20 | = E2 (within seed noise): dropped |
+| F1-fallpen | 847a889 | E3 + `is_terminated` −250 (fall penalty) | running | | | | |
+| F2-prog20 | 1fa4af8 | E3 + `lane_progress` weight 10 → 20 | running | | | | |
+| F3-e3-s2 | 77d3ff3 | E3, seed 2 | running | | | | |
+| F4-nopush | cd446bf | E3 + pushes off | running | | | | |
 
 Pollen reference: 4.883 s at 0.55 m/s.
 
