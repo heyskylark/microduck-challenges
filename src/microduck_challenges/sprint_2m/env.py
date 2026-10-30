@@ -287,11 +287,6 @@ def make_env_cfg(
         params={"sensor_name": self_collision_cfg.name},
     )
 
-    # F1 (EXPERIMENTS.md): price a fall itself. E3's gait falls three times as
-    # often in training as E2's; a fall only cost the reward it forfeits. Scaled
-    # by dt like every term, -250 charges -5 once per fall (not on timeouts).
-    cfg.rewards["termination"] = RewardTermCfg(func=mdp.is_terminated, weight=-250.0)
-
 
     # air_time window [0.125, 0.300] s. NOTE: standing still at zero command is
     # taught by the standing_envs curriculum (→25% standing envs by ~iter 2000),
@@ -336,7 +331,7 @@ def make_env_cfg(
     # pays linearly for speed down the lane up to v_ref, whatever the command.
     cfg.rewards["lane_progress"] = RewardTermCfg(
         func=sprint_rewards.lane_progress,
-        weight=10.0,  # E3: 5 → 10, a stronger pull for speed once the caps are gone
+        weight=20.0,  # E3: 5 → 10; F2: 10 → 20
         params={"v_ref": 2.0, "command_name": "twist", "command_threshold": 0.01},
     )
 
