@@ -78,6 +78,27 @@ def track_lateral_velocity(
     return torch.exp(-err / std**2)
 
 
+def track_linear_velocity_at_least(
+    env: ManagerBasedRlEnv,
+    std: float,
+    command_name: str = "twist",
+    command_threshold: float = 0.01,
+) -> torch.Tensor:
+    """track_linear_velocity that charges only for falling SHORT of the forward command while walking.
+
+    exp(-(max(cmd_x - v_x, 0)² + (cmd_y - v_y)² + v_z²) / std²): the bell curve's strong pull up to the
+    command, without its cap above it. A standing env still tracks v_x = 0 both ways.
+    """
+    asset = env.scene[_ROBOT.name]
+    command = env.command_manager.get_command(command_name)
+    v = asset.data.root_link_lin_vel_b
+    standing = torch.norm(command[:, :2], dim=1) <= command_threshold
+    short = command[:, 0] - v[:, 0]
+    err_x = torch.where(standing, short, torch.clamp(short, min=0.0))
+    err = torch.square(err_x) + torch.square(command[:, 1] - v[:, 1]) + torch.square(v[:, 2])
+    return torch.exp(-err / std**2)
+
+
 def upright_lean(
     env: ManagerBasedRlEnv,
     std: float,

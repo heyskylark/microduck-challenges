@@ -16,7 +16,8 @@ together.
 | run0 | 9aaec6d | default knobs (3000 iterations) | 1500 | 4.800 s | 5/5 | 0.50 | (baseline) |
 | A1-fwd4 | 7a33a51 | `forward_reward` 2 → 4 | 700 | 2.802 s | 5/5 | 0.80 | −2.00 s vs run0 |
 | A2-progress | 368ffa2 | + `lane_progress` (w 5, v_ref 2.0), forward back at 2 | 700 | 2.882 s | 5/5 | 0.90 | −1.92 s vs run0; more robust than A1 |
-| B2-rate03 | 37d71dd | A2 + `action_rate_l2` ramp capped at −0.3 | running | | | | |
+| **B2-rate03** | 37d71dd | A2 + `action_rate_l2` ramp capped at −0.3 | 1999 | **2.156 s** | 5/5 | 1.20 | −0.73 s vs A2; finishes at every vx |
+| B3-rock | dc198f3 | B2 + roll/pitch rate tolerance std² 0.5 → 1.5 | running | | | | |
 | A3-nofwdtrack | 2540a2a | A2 + `track_linear_velocity` without vx | 1000 (stopped) | 5.022 s | 5/5 | 0.70 | +2.14 s vs A2: refuted |
 | B1-lean | 18905d7 | B2 + forward lean allowed with speed | running | | | | |
 
@@ -70,3 +71,20 @@ Pollen reference: 4.883 s at 0.55 m/s.
   strongest "go" signal: near a command it pays about 2·2·err/0.1 per m/s, against lane_progress's flat
   2.5 per m/s. Ignoring the command needs a stronger progress term. To retest only if progress weight ≥ 10
   turns out to be worth it.
+
+### B2-rate03: action_rate_l2 ramp capped at −0.3 (commit 37d71dd)
+- **Hypothesis**: on A2, stopping the smoothness ramp at −0.3 (instead of −1.0 by 1500) keeps the speed A1 and
+  A2 lost from 1000 on.
+- **Score per checkpoint**: 400 3.17 · 500 2.94 · 600 2.83 · 700 2.79 · 800 2.81 · 900 2.77 · 1000 2.66 · 1100 2.67 ·
+  1200 2.52 · 1300 2.65 · 1400 2.40 · 1500 2.35 · 1600 2.44 · 1700 2.33 · 1800 2.27 · 1900 2.26 · **1999 2.16**.
+  Every checkpoint from 200 on is 5/5.
+- **Sweep of checkpoint 1999**: **every vx from 0.20 to 1.20 finishes, and the time falls steadily with vx**:
+  0.20 6.42 · 0.50 3.10 · 0.80 2.43 · 1.00 2.23 · 1.15 2.15 · 1.20 2.15. It tracks the command, all the way up
+  to the top of the range.
+- **Curves at the end**: fell_over 0.30, air time 0.118 s, peak foot height 23 mm (A2: 18), `air_time` 1.41/s
+  (A2: 1.16), `lane_progress` 1.13/s and still rising.
+- **Reading**: confirmed, the biggest gain so far. Smoothness at −1.0 was the brake: the gait now keeps getting
+  faster until the last checkpoint, so it has not converged at 2000. It is fastest at the highest command,
+  1.2 m/s, which means **the command's ceiling is now the limit**: the tracking bell curve also charges for
+  going faster than 1.2. Two ideas follow. (1) One-sided tracking, charging only for falling short of the
+  command, which keeps its strong pull and loses its cap (D1). (2) Training longer.
