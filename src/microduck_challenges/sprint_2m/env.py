@@ -253,13 +253,6 @@ def make_env_cfg(
     # affordable.
     cfg.rewards["upright"].weight = knobs["upright_reward"]
     cfg.rewards["upright"].params["std"] = math.sqrt(0.05)
-    # Lean into the run (EXPERIMENTS.md, B1): a forward (nose-down) lean's
-    # std² widens 0.05 → 0.3 as lane speed goes 0.3 → 0.8 m/s. A 15° lean then
-    # keeps 1.6 of 2.0 instead of 0.5. Roll and backward lean keep std² 0.05.
-    cfg.rewards["upright"].func = sprint_rewards.upright_lean
-    cfg.rewards["upright"].params.update(
-        {"lean_std": math.sqrt(0.3), "speed_lo": 0.3, "speed_hi": 0.8}
-    )
 
     # Foot-specific configurations. In mjlab 1.3.0 foot_swing_height is fully
     # sensor-driven (no asset_cfg); only foot_clearance/foot_slip still carry an
@@ -302,8 +295,14 @@ def make_env_cfg(
     # Velocity tracking rewards
     cfg.rewards["track_linear_velocity"].weight = knobs["forward_reward"]
     cfg.rewards["track_linear_velocity"].params["std"] = math.sqrt(0.1)
+    # Yaw rate tracked as before; roll/pitch rates get their own, looser
+    # tolerance (EXPERIMENTS.md, B3: std² 0.5 → 1.5) so a stride's rocking is
+    # no longer taxed. body_ang_vel still damps them lightly.
+    cfg.rewards["track_angular_velocity"].func = sprint_rewards.track_yaw_rate_loose_rock
+    cfg.rewards["track_angular_velocity"].params = {
+        "yaw_std": math.sqrt(0.5), "rock_std": math.sqrt(1.5), "command_name": "twist",
+    }
     cfg.rewards["track_angular_velocity"].weight = 2.0
-    cfg.rewards["track_angular_velocity"].params["std"] = math.sqrt(0.5)
 
     # Walk straight. The Arena commands yaw 0 and never tells the policy its
     # heading, and nothing above prices a slow drift: at this std a 0.07 rad/s
