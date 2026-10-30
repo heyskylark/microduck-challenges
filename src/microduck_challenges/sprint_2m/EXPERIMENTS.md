@@ -27,10 +27,14 @@ together.
 | E2-stack-s2 | c8deff2 | same, seed 2 | 1500 | 1.708 s | 5/5 | 1.20 | replicates E2 (1.71–1.74) |
 | **E3-prog10** | 263f189 | E2 + `lane_progress` weight 5 → 10 | 1800 | **1.494 s** | 5/5 | 0.85 | −0.23 s vs E2; ~1.5 s at every vx |
 | E4-runpose | 5bc6ec8 | E2 + `pose` running tolerance from 0.6 m/s | 1999 | 1.771 s | 5/5 | 1.20 | = E2 (within seed noise): dropped |
-| F1-fallpen | 847a889 | E3 + `is_terminated` −250 (fall penalty) | running | | | | |
-| F2-prog20 | 1fa4af8 | E3 + `lane_progress` weight 10 → 20 | running | | | | |
-| F3-e3-s2 | 77d3ff3 | E3, seed 2 | running | | | | |
-| F4-nopush | cd446bf | E3 + pushes off | running | | | | |
+| F1-fallpen | 847a889 | E3 + `is_terminated` −250 (fall penalty) | 1100 | 1.531 s | 5/5 | 1.20 | = E3; 5/5 to 1100, then unstable |
+| F2-prog20 | 1fa4af8 | E3 + `lane_progress` weight 10 → 20 | 800 | 1.504 s | 5/5 | 0.60 | = E3; collapses after 800 |
+| F3-e3-s2 | 77d3ff3 | E3, seed 2 | 1000 | 1.483 s | 5/5 | 1.15 | replicates E3 (1.48–1.49) |
+| **F4-nopush** | cd446bf | E3 + pushes off | 1400 | **1.464 s** | 5/5 | 1.05 | −0.03 s vs E3, but 9 of 20 checkpoints fall |
+| G1-prog20-fallpen | 9901f67 | F2 + F1 (progress 20 + fall penalty) | running | | | | |
+| G2-com5 | 350496a | E3 + CoM randomization capped at ±5 mm | running | | | | |
+| G3-stand2 | 4087290 | E3 + standing envs held at 2% | running | | | | |
+| G4-com5-stand2 | 274fc1b | E3 + G2 + G3 (both, on purpose) | running | | | | |
 
 Pollen reference: 4.883 s at 0.55 m/s.
 
@@ -187,3 +191,31 @@ Pollen reference: 4.883 s at 0.55 m/s.
   match E2's.
 - **Reading**: no gain (1.77 against E2's 1.71–1.74), dropped. Like B3: loosening a term the policy was already
   paying for does not change the gait.
+
+### The F batch: on E3 (commits 847a889, 1fa4af8, 77d3ff3, cd446bf)
+Four single changes on E3, run together.
+
+| Run | Change | Best | Checkpoints after the best |
+|---|---|---|---|
+| F1-fallpen | `is_terminated` weight −250 (−5 per fall) | 1100: 1.531 s | 1200–1999: 4/5, 1/5, 4/5, 4/5, 2/5, 2/5, 3/5, 2/5, 3/5 |
+| F2-prog20 | `lane_progress` 10 → 20 | 800: 1.504 s | 900–1999: no 5/5; 0/5 at 1300 |
+| F3-e3-s2 | E3 again, seed 2 | 1000: 1.483 s | 1100–1999: 5/5 except 1500 (1/5), 1600 (4/5), 1999 (4/5) |
+| F4-nopush | velocity pushes off (and the base config's) | 1400: 1.464 s | 1500–1999: 4/5 at 5 of 6 |
+
+- **Sweeps of the best checkpoints**: all four run one gait at every vx. F4 scores 1.44–1.64 s, F3 1.49–1.66,
+  F2 1.49–1.55, F1 1.50–1.74.
+- **Common pattern**: every run with progress ≥ 10 (E3 included) peaks around checkpoint 1000–1400, then falls more
+  and slows. Measured over 50-iteration windows, `fell_over` jumps by 0.2–0.4 and lane speed drops by 0.03–0.05 m/s
+  **right at iteration 1000 and again at 1500**, in E3, F1, F3 and F4 alike. Those are the steps of two curricula:
+  CoM randomization (±5 → ±10 → ±15 mm trunk, ±10 mm head) and the standing-env share (10 → 15 → 20%).
+- **F1**: the fall penalty does what it says until 1100 (`fell_over` 0.42 at 1000 against E3's 0.73, and 5/5 at
+  every checkpoint from 200 to 1100), but does not stop the late decline.
+- **F2**: too much. Training falls go from 3.3 to 7.4 per reset batch and episode length from 760 to 448 by 1999:
+  the policy gives up balance for speed. Its best (1.50 at 800) is no faster than E3's.
+- **F3**: E3 replicated, 1.483 against 1.494.
+- **F4**: the fastest checkpoint so far (1.464 s at 1400), but it also has the most failing checkpoints (9 of 20 fall).
+  Training without pushes is not what makes it fall less in training (`fell_over` matches E3's): the pushes made
+  E3 more robust in the Arena, not slower. Pushes stay on.
+- **Reading**: progress 10 is the right weight; the problem is now holding the gait late in training. Next (G):
+  F1 + F2 together (does the penalty tame progress 20?), and the two curricula behind the late decline, one at a
+  time and together.
