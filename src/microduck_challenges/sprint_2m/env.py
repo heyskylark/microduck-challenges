@@ -287,12 +287,6 @@ def make_env_cfg(
         params={"sensor_name": self_collision_cfg.name},
     )
 
-    # Price a fall itself (EXPERIMENTS.md, F1/H1/H4). With gamma 0.99 the
-    # policy looks ~2 s ahead, so a fall only forfeits ~2 s of reward while
-    # lane_progress pays every step. Scaled by dt like every term: -1000
-    # charges -20 once per fall (not on timeouts).
-    cfg.rewards["termination"] = RewardTermCfg(func=mdp.is_terminated, weight=-1000.0)
-
 
     # air_time window [0.125, 0.300] s. NOTE: standing still at zero command is
     # taught by the standing_envs curriculum (→25% standing envs by ~iter 2000),
@@ -882,7 +876,7 @@ RL_CFG = RslRlOnPolicyRunnerCfg(
         num_mini_batches=4,
         learning_rate=1.0e-3,
         schedule="adaptive",
-        gamma=0.99,
+        gamma=0.995,  # H2 (EXPERIMENTS.md): ~4 s horizon (was 0.99, ~2 s), so a fall weighs more
         lam=0.95,
         desired_kl=0.01,
         max_grad_norm=1.0,
