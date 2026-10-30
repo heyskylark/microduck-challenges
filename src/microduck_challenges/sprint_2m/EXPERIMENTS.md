@@ -19,7 +19,8 @@ together.
 | **B2-rate03** | 37d71dd | A2 + `action_rate_l2` ramp capped at −0.3 | 1999 | **2.156 s** | 5/5 | 1.20 | −0.73 s vs A2; finishes at every vx |
 | B3-rock | dc198f3 | B2 + roll/pitch rate tolerance std² 0.5 → 1.5 | running | | | | |
 | A3-nofwdtrack | 2540a2a | A2 + `track_linear_velocity` without vx | 1000 (stopped) | 5.022 s | 5/5 | 0.70 | +2.14 s vs A2: refuted |
-| B1-lean | 18905d7 | B2 + forward lean allowed with speed | running | | | | |
+| B1-lean | 18905d7 | B2 + forward lean allowed with speed | 1900 | 2.124 s | 5/5 | 1.20 | −0.03 s vs B2: small, kept |
+| B4-head | 5f6d00f | B2 + head freed at speed | running | | | | |
 | D1-atleast | 9870cb4 | B2 + forward tracking one-sided (no cap above the command) | running | | | | |
 
 Pollen reference: 4.883 s at 0.55 m/s.
@@ -89,3 +90,15 @@ Pollen reference: 4.883 s at 0.55 m/s.
   1.2 m/s, which means **the command's ceiling is now the limit**: the tracking bell curve also charges for
   going faster than 1.2. Two ideas follow. (1) One-sided tracking, charging only for falling short of the
   command, which keeps its strong pull and loses its cap (D1). (2) Training longer.
+
+### B1-lean: forward lean allowed at speed (commit 18905d7)
+- **Hypothesis**: on B2, widening `upright`'s tolerance for a forward lean (std² 0.05 → 0.3 as lane speed goes
+  0.3 → 0.8 m/s; roll and backward lean unchanged) lets the robot lean into the run and stride faster.
+- **Score per checkpoint**: 500 2.91 · 700 2.80 · 900 2.72 · 1100 2.73 · 1200 2.61 · 1300 2.48 · 1400 2.41 · 1500 2.31 ·
+  1600 2.20 · 1700 2.24 · 1800 2.18 · **1900 2.12** · 1999 2.14. B2 from 1600 on: 2.44 · 2.33 · 2.27 · 2.26 · 2.16.
+- **Sweep of checkpoint 1900**: finishes at every vx and gets faster with vx, as B2 does, about 0.05–0.1 s quicker at
+  each vx below 1.0 (0.50: 2.91 against 3.10).
+- **Curves at the end**: fell_over 0.34 (B2 0.30), `upright` 1.74 (unchanged: the lean it buys is now free),
+  `pose` 0.36 (B2 0.40: bigger strides), peak foot height 23 mm.
+- **Reading**: a small gain, ahead of B2 at each of the last five checkpoints, so kept; with one seed it
+  is within noise. It does not add falls in the Arena.
