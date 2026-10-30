@@ -289,9 +289,9 @@ def make_env_cfg(
 
     # Price a fall itself (EXPERIMENTS.md, F1/H1/H4). With gamma 0.99 the
     # policy looks ~2 s ahead, so a fall only forfeits ~2 s of reward while
-    # lane_progress pays every step. Scaled by dt like every term: -250
-    # charges -5 once per fall (not on timeouts).
-    cfg.rewards["termination"] = RewardTermCfg(func=mdp.is_terminated, weight=-250.0)
+    # lane_progress pays every step. Scaled by dt like every term: -1000
+    # charges -20 once per fall (not on timeouts).
+    cfg.rewards["termination"] = RewardTermCfg(func=mdp.is_terminated, weight=-1000.0)
 
 
     # air_time window [0.125, 0.300] s. NOTE: standing still at zero command is
