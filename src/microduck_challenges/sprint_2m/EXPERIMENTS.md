@@ -9,6 +9,47 @@ local RTX 3090, a checkpoint every 100 iterations. The run name says the change.
 best checkpoint. A change that adds falls is not thrown out on that alone: speed and stability are tuned
 together.
 
+## Outcome
+
+**4.800 s → 1.412 s, 5/5** (run0 → K2, checkpoint 1999). The folder now holds K1/K2's recipe (`env.py`, `rewards.py`)
+with a 2000-iteration `[recipe]` in `challenge.toml`. The fastest single checkpoint is K4's 1999 at 1.359 s, from
+a less robust recipe (see below). Nothing has been published.
+
+What the recipe changes against the folder as cloned, all kept by the runs below:
+
+| Change | Where | Run | Gain when added |
+|---|---|---|---|
+| `lane_progress` = 10 · clip(v along the spawn heading, 0, 2)/2, whatever the command | `rewards.py`, `env.py` | A2, E3 | −1.9 s, then −0.23 s |
+| `action_rate_l2` ramp capped at −0.3 (was −1.0 by 1500) | `env.py` curriculum | B2 | −0.73 s |
+| Forward tracking one-sided: going faster than the command costs nothing | `rewards.py` `track_linear_velocity_at_least` | D1 | −0.28 s |
+| Head tolerance 0.5 → 1.0 rad and `head_pose_bias` faded out with speed | `rewards.py` head terms | B4 | −0.33 s |
+| Forward-lean tolerance widened with speed (std² 0.05 → 0.3) | `rewards.py` `upright_lean` | B1 | −0.03 s |
+| Standing envs held at 2% (was ramped to 25%) | `env.py` curriculum | G3 | −0.05 s |
+| Mirror-symmetry loss (`ENABLE_SYMMETRY`) | `env.py` | I2 | late checkpoints off the wall |
+| `lane_drift` = 2 · exp(−v_across² / 0.15²) | `rewards.py`, `env.py` | I3 | late checkpoints off the wall |
+
+Checkpoints to choose from (all local, indicative):
+
+| Checkpoint | Score | Sweep | End y of the trace seed | Neighbours |
+|---|---|---|---|---|
+| **K2 1999** (`2026-10-30_20-27-50_K2-mirror-drift-s2`) | 1.412 s @1.20 | 1.40–1.51 s at all 21 vx | −0.08 m | every checkpoint from 200 is 5/5 |
+| K4 1999 (`2026-10-30_21-02-01_K4-mirror-s2`) | 1.359 s @0.65 | not swept | −0.25 m | 1800 is 3/5 |
+| K1 1999 (`2026-10-30_18-56-28_K1-mirror-drift`) | 1.463 s @1.05 | 1.42–1.47 s at all 21 vx | −0.07 m | every checkpoint from 200 is 5/5 |
+
+Simulations on another CPU drift apart after a few seconds; a gait that ends 0.25 m off centre has 0.15 m of
+margin to a wall, one ending at 0.08 m has 0.3 m. That is why K2 is recommended over K4.
+
+What was learned (details per run below):
+- The original ceiling was the reward's shape, not the robot: speed tracking is a bell curve around the
+  command, which pays nothing for being far below it and charges for going above it.
+- The smoothness ramp to −1.0 was the main brake once speed was paid for.
+- Loosening a term the policy already pays for (rocking B3, running pose E4) does not change the gait.
+- Pushes in training make the Arena runs more robust (F4: removing them made 9 of 20 checkpoints fall).
+- Late checkpoints fail because the fast gaits drift sideways into the lane's wall, which training does
+  not have (trace analysis, G batch). A tighter heading tolerance does not fix it (I1); the mirror loss
+  and `lane_drift` do; a wall termination does too, at a cost of ~0.1 s (J batch).
+- Fall penalties, γ 0.995 and progress weight 20 did not help (F1, F2, G1).
+
 ## Summary
 
 | Run | Commit | Change | Best checkpoint | Score | Finishes | vx | vs. best before |
@@ -44,10 +85,10 @@ together.
 | J2-drift-wall | 32984ef | I3 + `lane_wall` | 1000 (stopped) | 3.77 s | 5/5 | 0.30 | refuted: 0/5 at every checkpoint to 600, 3.77 s at 1000 |
 | J3-mirror-wall | 13d0ccd | I2 + `lane_wall` | 1900 | 1.578 s | 5/5 | 1.15 | slowest of the batch, but 5/5 at every checkpoint from 100 |
 | J4-wall-s2 | 05ecd5b | J1, seed 2 | 1999 | 1.492 s | 5/5 | 1.20 | 11 of 11 late checkpoints 5/5 |
-| K1-mirror-drift | aded45a | I2 + I3 (mirror loss + lane_drift, on purpose) | running | | | | |
-| K2-mirror-drift-s2 | dfd67e0 | K1, seed 2 | running | | | | |
-| K3-lanedrift-s2 | 8fcf5e9 | I3, seed 2 | running | | | | |
-| K4-mirror-s2 | d604aec | I2, seed 2 | running | | | | |
+| K1-mirror-drift | aded45a | I2 + I3 (mirror loss + lane_drift, on purpose) | 1999 | 1.463 s | 5/5 | 1.05 | 5/5 at every checkpoint from 200 |
+| **K2-mirror-drift-s2** | dfd67e0 | K1, seed 2 | 1999 | **1.412 s** | 5/5 | 1.20 | 5/5 at every checkpoint from 200; **recommended** |
+| K3-lanedrift-s2 | 8fcf5e9 | I3, seed 2 | 1900 | 1.489 s | 5/5 | 0.60 | 2 of 19 checkpoints from 200 fall |
+| **K4-mirror-s2** | d604aec | I2, seed 2 | 1999 | **1.359 s** | 5/5 | 0.65 | fastest, but ends 0.25 m off centre; 1800 is 3/5 |
 
 Pollen reference: 4.883 s at 0.55 m/s.
 
@@ -313,3 +354,19 @@ rotated spawn heading before the run.
   is not kept as the recipe; it is the choice if robustness on the Space (another CPU) matters more than
   the last 0.1 s.
 - Next (K): I2 + I3 together, and second seeds of I2, I3 and of their combination, to choose between them.
+
+### The K batch: choosing between I2 and I3 (commits aded45a, dfd67e0, 8fcf5e9, d604aec)
+
+| Run | Best | 5/5 among 200–1999 | End y from 1000 on | Sweep of the best |
+|---|---|---|---|---|
+| K1 (I2 + I3, seed 1) | 1.463 s @1999 | **19 of 19** | −0.08 to +0.24 | 1.42–1.47 s at all 21 vx |
+| **K2 (I2 + I3, seed 2)** | **1.412 s @1999** | **19 of 19** | −0.23 to +0.06 | 1.40–1.51 s at all 21 vx |
+| K3 (I3, seed 2) | 1.489 s @1900 | 17 of 19 | +0.13 to +0.34 | — |
+| K4 (I2, seed 2) | **1.359 s @1999** | 17 of 19 | −0.35 to +0.03 | — |
+
+- **Mirror loss + lane_drift together (K1, K2)**: the only recipe that finishes 5/5 at every checkpoint from 200
+  on, on both seeds, with the trace seed ending within 0.24 m of centre. Kept as the folder's recipe.
+- **I2 alone (K4)** reached the fastest checkpoint of the log (1.359 s), but ends 0.25 m off centre and fails at
+  1100 and 1800: fast, less safe.
+- **I3 alone (K3)** is slower on seed 2 (1.489 s) and still ends at +0.13 to +0.34.
+- Their combination is slower to learn early (1.68 s at 1000 against K4's 1.52) and catches up by 1999.

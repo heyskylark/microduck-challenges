@@ -44,15 +44,16 @@ observation noise.
 | File | What it holds | Change it? |
 |---|---|---|
 | `challenge.toml` `[params]` | The three knobs below | Yes, first. Keep each value within its `min`/`max` (the workshop refuses others) |
-| `challenge.toml` `[recipe]` | `num_envs` 4096, `max_iterations` 3000, `seed` 1 | Yes, when agreed with the user |
-| `env.py` | The whole environment: rewards, commands, domain randomization, curricula, terrain, `RL_CFG` (network, PPO, checkpoints every 250 iterations) | Yes, once the knobs are not enough |
-| `rewards.py` | Does not exist yet: create it for a custom reward term, then add the term to `cfg.rewards` in `env.py` | Yes |
+| `challenge.toml` `[recipe]` | `num_envs` 4096, `max_iterations` 2000, `seed` 1 | Yes, when agreed with the user |
+| `env.py` | The whole environment: rewards, commands, domain randomization, curricula, terrain, `RL_CFG` (network, PPO, mirror loss, checkpoints every 100 iterations) | Yes, once the knobs are not enough |
+| `rewards.py` | The sprint's own reward and termination terms (`lane_progress`, `lane_drift`, `track_linear_velocity_at_least`, `upright_lean`, the speed-gated head terms, `lane_wall`); add a new one here, then to `cfg.rewards` in `env.py` | Yes |
+| `EXPERIMENTS.md` | Every run of this folder: commit, hypothesis, Arena numbers, reading. Read its Outcome first | Add each run |
 | `tasks.py`, `event`/`task`/`kind` in `challenge.toml` | Registration with mjlab and the Arena | No |
 
 | Knob | Label | Default | Range | Sets in `env.py` |
 |---|---|---|---|---|
-| `forward_reward` | Follow the speed order | 2.0 | 0.5–5.0 | `track_linear_velocity` weight |
-| `upright_reward` | Stay upright | 2.0 | 0.5–5.0 | `upright` weight |
+| `forward_reward` | Follow the speed order | 2.0 | 0.5–5.0 | `track_linear_velocity` weight (one-sided: only falling short of the command costs) |
+| `upright_reward` | Stay upright | 2.0 | 0.5–5.0 | `upright` weight (`upright_lean`: a forward lean is tolerated more with speed) |
 | `step_reward` | Lift your feet | 3.0 | 0.0–6.0 | `air_time` weight |
 
 Do not change, or the Arena cannot race the policy or the tests fail:
@@ -88,7 +89,8 @@ uv run hf download pollen-robotics/microduck-sprint-2m-reference policy.onnx --l
 uv run --group workshop arena score logs/reference/sprint-2m/policy.onnx --event sprint-2m
 ```
 
-It scores 4.883 s, 5/5, at 0.55 m/s (checkpoint 1000 of the recipe as it stands in this folder).
+It scores 4.883 s, 5/5, at 0.55 m/s (checkpoint 1000 of the recipe this folder was first cloned with; the
+recipe it holds now scores about 1.41 s, see `EXPERIMENTS.md`).
 
 Agree with the user before the first run:
 
@@ -224,6 +226,20 @@ fork, never `pollen-robotics`; the workshop's home sets that up).
   simulate trains a policy that fails there (it broke the roller's policies).
 - **Head**: do not tighten `head_pose_tracking`'s std to fix the head droop; a tight std made the
   policy stop walking. The droop is priced by `head_pose_bias` instead.
+- **Pay for speed itself, not just for tracking.** The bell-curve tracking of the command pays nothing far
+  below the command and charges above it. `lane_progress` (weight 10, speed along the spawn heading) and a
+  one-sided `track_linear_velocity` took the score from 4.8 s to 1.5 s; progress weight 20 collapses.
+  The policy then runs one gait (about 1.4 s) at every commanded vx.
+- **`action_rate_l2` at −1.0 is a brake**: capping its ramp at −0.3 gained 0.73 s.
+- **Free the head at speed**: widening `head_pose_tracking` and fading `head_pose_bias` out with lane speed
+  gained 0.33 s (the head is 38% of the mass).
+- **Fast gaits fail on the lane's wall, not on balance.** Decode `trace_b64` in `workshop/model_<N>.json`
+  (trunk position, quaternion, joints per frame; `logs/analysis/report.py` prints the end y): failing
+  checkpoints end at y ≈ ±0.33 m against walls at ±0.4. Training has no wall. A tighter `heading_hold`
+  (std 0.15) does not fix it; the mirror loss plus `lane_drift` do (5/5 at every checkpoint from 200 on two
+  seeds). A `lane_wall` termination also does, at about 0.1 s.
+- **Keep the velocity pushes**: the Arena has none, but training without them made 9 of 20 checkpoints
+  fall there. Standing envs above 2% waste training (the Arena never commands 0).
 
 ## The competition
 

@@ -4,9 +4,9 @@ event = "sprint-2m"
 task  = "Mjlab-Sprint2m-MicroDuck"
 kind  = "perpetual"
 
-[recipe]                  # the first training, as is
+[recipe]                  # EXPERIMENTS.md: every run since A1 trained 2000 iterations
 num_envs       = 4096
-max_iterations = 3000
+max_iterations = 2000
 seed           = 1
 
 [params.forward_reward]
