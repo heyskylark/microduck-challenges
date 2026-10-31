@@ -40,11 +40,14 @@ together.
 | I1-heading015 | 37cc525 | G3 + `heading_hold` std 0.4 → 0.15 rad | 1100 | 1.497 s | 5/5 | 0.95 | no gain; still drifts to the wall |
 | **I2-mirror** | 0fff47a | G3 + mirror-symmetry loss | 1999 | **1.416 s** | 5/5 | 0.75 | −0.02 s vs G3; 7 of 11 late checkpoints 5/5 |
 | **I3-lanedrift** | 4b29b33 | G3 + `lane_drift` (sideways speed across the lane) | 1800 | **1.424 s** | 5/5 | 1.05 | −0.01 s vs G3; 9 of 11 late checkpoints 5/5 |
-| J1-wall | aa1ea89 | G3 + `lane_wall` termination (0.3 m, first 2.5 m) | running | | | | |
+| J1-wall | aa1ea89 | G3 + `lane_wall` termination (0.3 m, first 2.5 m) | 1500 | 1.527 s | 5/5 | 1.20 | +0.09 s vs G3, but 10 of 11 late checkpoints 5/5 |
 | J2-drift-wall | 32984ef | I3 + `lane_wall` | 1000 (stopped) | 3.77 s | 5/5 | 0.30 | refuted: 0/5 at every checkpoint to 600, 3.77 s at 1000 |
-| J3-mirror-wall | 13d0ccd | I2 + `lane_wall` | running | | | | |
-| J4-wall-s2 | 05ecd5b | J1, seed 2 | running | | | | |
+| J3-mirror-wall | 13d0ccd | I2 + `lane_wall` | 1900 | 1.578 s | 5/5 | 1.15 | slowest of the batch, but 5/5 at every checkpoint from 100 |
+| J4-wall-s2 | 05ecd5b | J1, seed 2 | 1999 | 1.492 s | 5/5 | 1.20 | 11 of 11 late checkpoints 5/5 |
 | K1-mirror-drift | aded45a | I2 + I3 (mirror loss + lane_drift, on purpose) | running | | | | |
+| K2-mirror-drift-s2 | dfd67e0 | K1, seed 2 | running | | | | |
+| K3-lanedrift-s2 | 8fcf5e9 | I3, seed 2 | running | | | | |
+| K4-mirror-s2 | d604aec | I2, seed 2 | running | | | | |
 
 Pollen reference: 4.883 s at 0.55 m/s.
 
@@ -288,3 +291,25 @@ about), with the trace seed's end y (walls at ±0.4 m):
   (2.59 s at 500 against G3's 1.79) and catches up by 1600 (1.48, 1.45, 1.42, 1.43). `lane_drift` pays 0.39 of 2
   at the end: the gait still sways across the lane, so there is room for more.
 - Next (J): the wall itself as a termination, alone and on top of I2 and I3, and on a second seed.
+
+### The J batch: the wall as a termination (commits aa1ea89, 32984ef, 13d0ccd, 05ecd5b)
+New termination `lane_wall` (in `rewards.py`): the episode ends when the trunk is more than 0.3 m off the spawn
+line within the first 2.5 m of it, where the Arena's wall would stop it. Checked with a throwaway test on a
+rotated spawn heading before the run.
+
+| Run | Best | 5/5 among 1000–1999 | End y from 1000 on |
+|---|---|---|---|
+| J1 (G3 + wall) | 1.527 s @1500 | 10 of 11 | −0.02 to −0.32 |
+| J2 (I3 + wall) | 3.77 s @1000, stopped | — | 0/5 at every checkpoint to 600 |
+| J3 (I2 + wall) | 1.578 s @1900 | **11 of 11** (5/5 at every checkpoint from 100) | −0.28 to +0.13 |
+| J4 (G3 + wall, seed 2) | 1.492 s @1999 | 11 of 11 | −0.05 to +0.35 |
+
+- `lane_wall` ends about three times as many episodes as `fell_over` does: in training, the robots drift
+  that far within 2.5 m all the time (velocity pushes included).
+- **Reading**: the most reliable runs of the whole log, but 0.07–0.16 s slower than I2 and I3: a gait that must not
+  stray 0.3 m from its spawn line in training walks more carefully. Note that the end y in the Arena is
+  not smaller than I3's; the Arena runs just stop failing. J2 (lane_drift and the wall together) is too much:
+  it could not learn to walk for 600 iterations. The score counts only the best checkpoint, so the wall
+  is not kept as the recipe; it is the choice if robustness on the Space (another CPU) matters more than
+  the last 0.1 s.
+- Next (K): I2 + I3 together, and second seeds of I2, I3 and of their combination, to choose between them.
