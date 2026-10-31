@@ -93,11 +93,16 @@ K1/K2 are the baseline cell (seeds 1 and 2). g is the speed gate (0 below 0.3 m/
 Judged on the score, on the share of checkpoints from 1000 on that are 5/5, and on the head lean and trunk pitch
 per checkpoint (`report.py` now prints both from the Arena trace).
 
+Evaluation note: with four trainings on the GPU (23.8 GB of 24.5), the evaluator's ONNX export ran out of GPU
+memory; it now runs with `CUDA_VISIBLE_DEVICES=` (export and race on the CPU). Arena 0.7.0 (from the upstream
+merge) re-scored every stored checkpoint; the scores match the 0.5.1 ones (K2 1999: 1.412 s).
+
 ### Waiting: M1/M2, on hold
 | ID | Change | Hypothesis |
 |---|---|---|
 | M1 | pacer: r = clip(v_lane − pace, 0, 0.3)/0.3, w 2; pace = never-decreasing EMA (α 0.01/step) of the 75th percentile of v_lane over walking envs past their first second | Pay concentrated at the current frontier |
 | M2 | rank: r = percentile of v_lane among walking envs past their first second, w 3 | The same, scale-free |
+
 Doubts, written down before running:
 - `lane_progress` is already linear (no dead zone), and F2 showed that more speed pressure alone trades away
   balance. M1 and M2 differ in paying the frontier rather than speed in general; a small gain at best.
