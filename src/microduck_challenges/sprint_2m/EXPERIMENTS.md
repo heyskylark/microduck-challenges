@@ -50,6 +50,51 @@ What was learned (details per run below):
   and `lane_drift` do; a wall termination does too, at a cost of ~0.1 s (J batch).
 - Fall penalties, γ 0.995 and progress weight 20 did not help (F1, F2, G1).
 
+## Planned next (not run yet)
+
+### Head and trunk lean: what the faster entries do
+Measured in the Arena's own race (trace forward kinematics, steady running, the first quarter skipped). Head lean
+is the angle of the neck-base → head vector from vertical: 0° is straight up, 90° straight ahead.
+
+| Policy | Board | Neck pitch (home 20°) | Head pitch (home 20°) | Head lean | Head ahead of trunk | Trunk pitch |
+|---|---|---|---|---|---|---|
+| run0 1500 | 4.80 s | 11° | 26° | −12° | 0.8 cm | 0.5° |
+| **K2 1999** | 1.41 s | −3° | 49° | **13°** | 4.5 cm | 0.7° |
+| K4 1999 | 1.36 s | 3° | 52° | 10° | 4.2 cm | 2.6° |
+| RhodWeo | 1.01 s | −35° | 56° | 58° | 9.4 cm | 11.6° |
+| azukiq | 1.02 s | −52° | 50° | **81°** | 10.6 cm | 17.8° |
+| almuli | 1.09 s | −46° | 6° | 41° | 8.2 cm | 1.6° |
+| TheSauceman | 1.17 s | −39° | 14° | 32° | 6.9 cm | −2.2° |
+| ctcheung | 1.21 s | −18° | 44° | 30° | 7.0 cm | 4.1° |
+| RemiFabre | 1.24 s | −4° | 35° | 9° | 4.0 cm | 1.2° |
+| wwkkkoo | 1.30 s | −61° | −44° | 31° | 6.3 cm | −0.2° |
+
+Every entry faster than 1.2 s carries its head 30–81° forward. K2 tips the neck 23° forward and the head
+29° back, which keeps the head nearly upright. What prices the lean in K2:
+- `head_pose_tracking` pays K2 1.46 of 2.0 even at its upright head. Azukiq's neck/head pose would cost
+  ~0.52/s at the running tolerance (σh 1.0) and ~0.83/s below 0.8 m/s (σh 0.5).
+- `upright` charges a 17.8° forward trunk 0.53/s at σf² 0.3.
+- The neck's joint range allows 90° forward of zero (110° from home), so the joint limits do not block it.
+
+### Ablations, on K2's recipe, each on seeds 1 and 2
+| ID | Change | Hypothesis |
+|---|---|---|
+| L1 | `head_pose_tracking` free at speed: (1 − g)·[σh 0.5 term] + g·1 | The head tips forward as the faster entries' do; −0.1 to −0.3 s |
+| L2 | L1 + forward-lean σf² 0.3 → 1.0 | The faster entries also tip the trunk 12–18°: a lean that L1 alone still taxes |
+| M1 | pacer on the L winner: r = clip(v_lane − pace, 0, 0.3)/0.3, w 2; pace = never-decreasing EMA (α 0.01/step) of the 75th percentile of v_lane over walking envs past their first second | Pay concentrated at the current frontier |
+| M2 | rank on the L winner: r = percentile of v_lane among walking envs past their first second, w 3 | The same, scale-free |
+
+Doubts, written down before running:
+- `lane_progress` is already linear (no dead zone), and F2 showed that more speed pressure alone trades away
+  balance. M1 and M2 differ in paying the frontier rather than speed in general; a small gain at best.
+- **Adaptive command curriculum: not planned.** K2's sweep is flat (1.40–1.51 s at every vx): the policy ignores
+  the command. One-sided tracking pays fully for any speed at or above the command, and the policy already
+  runs faster than 1.2 m/s. A curriculum would raise the command range past 1.2, which the Arena never sends.
+- **PBT: deferred.** It would be 4 members (what the 3090 runs at once), exploiting by Arena score every ~400
+  iterations by copying the best member into the worst with perturbed weights (progress, σh, action-rate
+  cap). Its target is the seed spread (K1 1.463 vs K2 1.412). It needs resume plumbing (curricula restart
+  on warm start), a few times the engineering of an ablation.
+
 ## Summary
 
 | Run | Commit | Change | Best checkpoint | Score | Finishes | vx | vs. best before |
