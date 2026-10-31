@@ -50,7 +50,7 @@ What was learned (details per run below):
   and `lane_drift` do; a wall termination does too, at a cost of ~0.1 s (J batch).
 - Fall penalties, γ 0.995 and progress weight 20 did not help (F1, F2, G1).
 
-## Planned next (not run yet)
+## Next: the lean ablations (running) and what waits
 
 ### Head and trunk lean: what the faster entries do
 Measured in the Arena's own race (trace forward kinematics, steady running, the first quarter skipped). Head lean
@@ -76,14 +76,28 @@ Every entry faster than 1.2 s carries its head 30–81° forward. K2 tips the ne
 - `upright` charges a 17.8° forward trunk 0.53/s at σf² 0.3.
 - The neck's joint range allows 90° forward of zero (110° from home), so the joint limits do not block it.
 
-### Ablations, on K2's recipe, each on seeds 1 and 2
+### L: head and trunk lean, a 2×2 on K2's recipe
+K1/K2 are the baseline cell (seeds 1 and 2). g is the speed gate (0 below 0.3 m/s down the lane, 1 above 0.8).
+
+| Cell | Change | Reward |
+|---|---|---|
+| L-H (head) | `head_pose_tracking` free at full speed | (1 − g)·mean_j e^{−(e_j/0.5)²} + g·1 (was σh 0.5 → 1.0 with g) |
+| L-T (trunk) | `upright` forward-lean tolerance wider at speed | σf² = 0.05 + g·(1.0 − 0.05) (was up to 0.3) |
+| L-HT | both | |
+
+| Batch | Runs | Commits |
+|---|---|---|
+| L1 (running) | LH-headfree-s1 · LT-lean10-s1 · LHT-headfree-lean10-s1 · LHT-headfree-lean10-s2 | 5172e1a · 185ad84 · 19ea1e9 |
+| L2 | LH s2 · LT s2 · and, if L-H's head stays upright, a forward head target (neck −1.0 rad, head +0.5 rad from home, scaled by g) on seeds 1 and 2 | |
+
+Judged on the score, on the share of checkpoints from 1000 on that are 5/5, and on the head lean and trunk pitch
+per checkpoint (`report.py` now prints both from the Arena trace).
+
+### Waiting: M1/M2, on hold
 | ID | Change | Hypothesis |
 |---|---|---|
-| L1 | `head_pose_tracking` free at speed: (1 − g)·[σh 0.5 term] + g·1 | The head tips forward as the faster entries' do; −0.1 to −0.3 s |
-| L2 | L1 + forward-lean σf² 0.3 → 1.0 | The faster entries also tip the trunk 12–18°: a lean that L1 alone still taxes |
-| M1 | pacer on the L winner: r = clip(v_lane − pace, 0, 0.3)/0.3, w 2; pace = never-decreasing EMA (α 0.01/step) of the 75th percentile of v_lane over walking envs past their first second | Pay concentrated at the current frontier |
-| M2 | rank on the L winner: r = percentile of v_lane among walking envs past their first second, w 3 | The same, scale-free |
-
+| M1 | pacer: r = clip(v_lane − pace, 0, 0.3)/0.3, w 2; pace = never-decreasing EMA (α 0.01/step) of the 75th percentile of v_lane over walking envs past their first second | Pay concentrated at the current frontier |
+| M2 | rank: r = percentile of v_lane among walking envs past their first second, w 3 | The same, scale-free |
 Doubts, written down before running:
 - `lane_progress` is already linear (no dead zone), and F2 showed that more speed pressure alone trades away
   balance. M1 and M2 differ in paying the frontier rather than speed in general; a small gain at best.
@@ -134,6 +148,10 @@ Doubts, written down before running:
 | **K2-mirror-drift-s2** | dfd67e0 | K1, seed 2 | 1999 | **1.412 s** | 5/5 | 1.20 | 5/5 at every checkpoint from 200; **recommended** |
 | K3-lanedrift-s2 | 8fcf5e9 | I3, seed 2 | 1900 | 1.489 s | 5/5 | 0.60 | 2 of 19 checkpoints from 200 fall |
 | **K4-mirror-s2** | d604aec | I2, seed 2 | 1999 | **1.359 s** | 5/5 | 0.65 | fastest, but ends 0.25 m off centre; 1800 is 3/5 |
+| LH-headfree-s1 | 5172e1a | K2 + head free at full speed | running | | | | |
+| LT-lean10-s1 | 185ad84 | K2 + forward-lean σf² 0.3 → 1.0 | running | | | | |
+| LHT-headfree-lean10-s1 | 19ea1e9 | K2 + both | running | | | | |
+| LHT-headfree-lean10-s2 | 19ea1e9 | same, seed 2 | running | | | | |
 
 Pollen reference: 4.883 s at 0.55 m/s.
 
