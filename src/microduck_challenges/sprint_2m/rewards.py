@@ -186,14 +186,19 @@ def track_yaw_rate_loose_rock(
 def head_pose_tracking_at_speed(
     env: ManagerBasedRlEnv,
     std: float,
-    fast_std: float,
+    fast_std: float | None,
     speed_lo: float,
     speed_hi: float,
     command_name: str = "head_pose",
 ) -> torch.Tensor:
-    """head_pose_tracking whose tolerance widens from `std` to `fast_std` with speed (blend of the two)."""
+    """head_pose_tracking whose tolerance widens from `std` to `fast_std` with speed (blend of the two).
+
+    `fast_std=None` frees the head at speed: the running half pays 1 whatever the neck and head do.
+    """
     gate = speed_gate(env, speed_lo, speed_hi)
     slow = microduck_mdp.head_pose_tracking(env, command_name=command_name, std=std)
+    if fast_std is None:
+        return (1.0 - gate) * slow + gate
     fast = microduck_mdp.head_pose_tracking(env, command_name=command_name, std=fast_std)
     return (1.0 - gate) * slow + gate * fast
 
