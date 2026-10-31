@@ -234,7 +234,7 @@ fork, never `pollen-robotics`; the workshop's home sets that up).
 - **Free the head at speed**: widening `head_pose_tracking` and fading `head_pose_bias` out with lane speed
   gained 0.33 s (the head is 38% of the mass).
 - **Fast gaits fail on the lane's wall, not on balance.** Decode `trace_b64` in `workshop/model_<N>.json`
-  (trunk position, quaternion, joints per frame; `logs/analysis/report.py` prints the end y): failing
+  (base64 float32, 21 per frame: trunk x, y, z, quaternion w, x, y, z, 14 joints): failing
   checkpoints end at y ≈ ±0.33 m against walls at ±0.4. Training has no wall. A tighter `heading_hold`
   (std 0.15) does not fix it; the mirror loss plus `lane_drift` do (5/5 at every checkpoint from 200 on two
   seeds). A `lane_wall` termination also does, at about 0.1 s.
