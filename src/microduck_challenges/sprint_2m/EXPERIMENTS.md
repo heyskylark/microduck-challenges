@@ -41,9 +41,10 @@ together.
 | **I2-mirror** | 0fff47a | G3 + mirror-symmetry loss | 1999 | **1.416 s** | 5/5 | 0.75 | −0.02 s vs G3; 7 of 11 late checkpoints 5/5 |
 | **I3-lanedrift** | 4b29b33 | G3 + `lane_drift` (sideways speed across the lane) | 1800 | **1.424 s** | 5/5 | 1.05 | −0.01 s vs G3; 9 of 11 late checkpoints 5/5 |
 | J1-wall | aa1ea89 | G3 + `lane_wall` termination (0.3 m, first 2.5 m) | running | | | | |
-| J2-drift-wall | 32984ef | I3 + `lane_wall` | running | | | | |
+| J2-drift-wall | 32984ef | I3 + `lane_wall` | 1000 (stopped) | 3.77 s | 5/5 | 0.30 | refuted: 0/5 at every checkpoint to 600, 3.77 s at 1000 |
 | J3-mirror-wall | 13d0ccd | I2 + `lane_wall` | running | | | | |
 | J4-wall-s2 | 05ecd5b | J1, seed 2 | running | | | | |
+| K1-mirror-drift | aded45a | I2 + I3 (mirror loss + lane_drift, on purpose) | running | | | | |
 
 Pollen reference: 4.883 s at 0.55 m/s.
 
