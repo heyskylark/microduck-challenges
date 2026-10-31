@@ -87,8 +87,26 @@ K1/K2 are the baseline cell (seeds 1 and 2). g is the speed gate (0 below 0.3 m/
 
 | Batch | Runs | Commits |
 |---|---|---|
-| L1 (running) | LH-headfree-s1 · LT-lean10-s1 · LHT-headfree-lean10-s1 · LHT-headfree-lean10-s2 | 5172e1a · 185ad84 · 19ea1e9 |
-| L2 | LH s2 · LT s2 · and, if L-H's head stays upright, a forward head target (neck −1.0 rad, head +0.5 rad from home, scaled by g) on seeds 1 and 2 | |
+| L1 (done) | LH-headfree-s1 · LT-lean10-s1 · LHT-headfree-lean10-s1 · LHT-headfree-lean10-s2 | 5172e1a · 185ad84 · 19ea1e9 |
+| L2 (running) | LH-headfree-s2 · LT-lean10-s2 · LP-headtarget-s1 · LP-trunktarget-s1 | 35edfa0 · e43d9d1 · 2a2f840 · e8b8e71 |
+
+L1 results (baseline cell: K1 1.463 s, K2 1.412 s; head lean 13°, trunk 1°):
+
+| Run | Best | 5/5 among 1000–1999 | Head lean from 1000 on | Trunk pitch | Sweep of the best |
+|---|---|---|---|---|---|
+| LH s1 (head free) | **1.368 s** @1900 | 10 of 10 (every one from 200) | 24–41° | −3 to 0° | 1.36–1.42 s at all 21 vx |
+| LT s1 (lean σf² 1.0) | 1.451 s @1900 | 10 of 10 | 7–12° | 0–3° | 1.45–1.52 s |
+| LHT s1 (both) | **1.364 s** @1700 | 8 of 10 (1500, 1900 4/5) | 26–36° | −1 to 2° | 1.35–1.41 s |
+| LHT s2 (both) | 1.383 s @1500 | 10 of 10 | 24–31° | −1 to 1° | 1.37–1.44 s |
+
+- **Freeing the head works**: the head leans 24–41° (K2 13°) and all three head-free runs beat K2 by 0.03–0.05 s
+  and K1 by ~0.1 s, with every late checkpoint but two 5/5. Not the 58–81° of the 1.0 s entries, though.
+- **Freeing the trunk does nothing**: the trunk stays at 0–3° with σf² 1.0, alone (1.451 s ≈ K1) or with the head
+  free (where the head's forward lean makes the trunk sit slightly back). The lean was not taxed away; the
+  policy just does not use it.
+- So L2 swaps the planned conditional for **targets** on L-HT: the head pulled to the 1.0 s entries' pose (neck
+  −1.0 rad, head +0.5 rad from home, σ 0.5 at speed), and the trunk pulled to 12° forward (std² 0.05 short of
+  the target at speed). One seed each; LH and LT get their second seeds.
 
 Judged on the score, on the share of checkpoints from 1000 on that are 5/5, and on the head lean and trunk pitch
 per checkpoint (`report.py` now prints both from the Arena trace).
@@ -153,10 +171,14 @@ Doubts, written down before running:
 | **K2-mirror-drift-s2** | dfd67e0 | K1, seed 2 | 1999 | **1.412 s** | 5/5 | 1.20 | 5/5 at every checkpoint from 200; **recommended** |
 | K3-lanedrift-s2 | 8fcf5e9 | I3, seed 2 | 1900 | 1.489 s | 5/5 | 0.60 | 2 of 19 checkpoints from 200 fall |
 | **K4-mirror-s2** | d604aec | I2, seed 2 | 1999 | **1.359 s** | 5/5 | 0.65 | fastest, but ends 0.25 m off centre; 1800 is 3/5 |
-| LH-headfree-s1 | 5172e1a | K2 + head free at full speed | running | | | | |
-| LT-lean10-s1 | 185ad84 | K2 + forward-lean σf² 0.3 → 1.0 | running | | | | |
-| LHT-headfree-lean10-s1 | 19ea1e9 | K2 + both | running | | | | |
-| LHT-headfree-lean10-s2 | 19ea1e9 | same, seed 2 | running | | | | |
+| LH-headfree-s1 | 5172e1a | K2 + head free at full speed | 1900 | 1.368 s | 5/5 | 0.90 | −0.04 s vs K2; head 24–41° |
+| LT-lean10-s1 | 185ad84 | K2 + forward-lean σf² 0.3 → 1.0 | 1900 | 1.451 s | 5/5 | 1.20 | ≈ K1: trunk stays at 0–3° |
+| **LHT-headfree-lean10-s1** | 19ea1e9 | K2 + both | 1700 | **1.364 s** | 5/5 | 1.10 | −0.05 s vs K2; 1500, 1900 4/5 |
+| LHT-headfree-lean10-s2 | 19ea1e9 | same, seed 2 | 1500 | 1.383 s | 5/5 | 1.20 | every checkpoint from 300 5/5 |
+| LH-headfree-s2 | 35edfa0 | LH, seed 2 | running | | | | |
+| LT-lean10-s2 | e43d9d1 | LT, seed 2 | running | | | | |
+| LP-headtarget-s1 | 2a2f840 | LHT + running head pulled to neck −1.0, head +0.5 rad | running | | | | |
+| LP-trunktarget-s1 | e8b8e71 | LHT + trunk pulled to 12° forward at speed | running | | | | |
 
 Pollen reference: 4.883 s at 0.55 m/s.
 
