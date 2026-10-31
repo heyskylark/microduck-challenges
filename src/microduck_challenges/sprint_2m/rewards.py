@@ -8,6 +8,8 @@ term's tolerance that is relaxed: a term relaxes only once the robot is actually
 
 from __future__ import annotations
 
+import math
+
 import torch
 from mjlab.envs import ManagerBasedRlEnv
 from mjlab.managers.scene_entity_config import SceneEntityCfg
@@ -151,21 +153,25 @@ def upright_lean(
     lean_std: float,
     speed_lo: float,
     speed_hi: float,
+    lean_target_deg: float = 0.0,
     asset_cfg: SceneEntityCfg = _ROBOT,
 ) -> torch.Tensor:
     """`upright` whose tolerance for a FORWARD (nose-down) lean widens from `std` to `lean_std` with speed.
 
-    exp(-(g_y² + min(g_x, 0)²) / std² - max(g_x, 0)² / σ_fwd²), g the projected gravity of the body:
-    nose-down gives g_x > 0. Roll and a backward lean keep `std` at every speed.
+    exp(-g_y² / std² - e_x² / σ²), g the projected gravity of the body (nose-down gives g_x > 0) and
+    e_x = g_x - gate · sin(lean_target): σ² is `lean_std`² (blended in with speed) past the target, `std`²
+    short of it. With no target, a backward lean keeps `std`; with one, the trunk is pulled forward to it
+    at speed.
     """
     asset = env.scene[asset_cfg.name]
     quat = asset.data.body_link_quat_w[:, asset_cfg.body_ids, :].squeeze(1)
     g = quat_apply_inverse(quat, asset.data.gravity_vec_w.expand(quat.shape[0], 3))
     gate = speed_gate(env, speed_lo, speed_hi)
     var_fwd = std**2 + gate * (lean_std**2 - std**2)
-    fwd = torch.clamp(g[:, 0], min=0.0)
-    back = torch.clamp(g[:, 0], max=0.0)
-    return torch.exp(-(torch.square(g[:, 1]) + torch.square(back)) / std**2 - torch.square(fwd) / var_fwd)
+    e_x = g[:, 0] - gate * math.sin(math.radians(lean_target_deg))
+    past = torch.clamp(e_x, min=0.0)
+    short = torch.clamp(e_x, max=0.0)
+    return torch.exp(-(torch.square(g[:, 1]) + torch.square(short)) / std**2 - torch.square(past) / var_fwd)
 
 
 def track_yaw_rate_loose_rock(
@@ -189,17 +195,30 @@ def head_pose_tracking_at_speed(
     fast_std: float | None,
     speed_lo: float,
     speed_hi: float,
+    fast_offset: tuple[float, float, float, float] | None = None,
     command_name: str = "head_pose",
 ) -> torch.Tensor:
     """head_pose_tracking whose tolerance widens from `std` to `fast_std` with speed (blend of the two).
 
     `fast_std=None` frees the head at speed: the running half pays 1 whatever the neck and head do.
+    `fast_offset` (neck_pitch, head_pitch, head_yaw, head_roll deltas, rad) moves the running half's
+    target off the command, so at speed the head is pulled to that pose instead.
     """
     gate = speed_gate(env, speed_lo, speed_hi)
     slow = microduck_mdp.head_pose_tracking(env, command_name=command_name, std=std)
     if fast_std is None:
         return (1.0 - gate) * slow + gate
-    fast = microduck_mdp.head_pose_tracking(env, command_name=command_name, std=fast_std)
+    if fast_offset is None:
+        fast = microduck_mdp.head_pose_tracking(env, command_name=command_name, std=fast_std)
+    else:
+        # Same measurement as microduck_mdp.head_pose_tracking (whose call above cached the joint ids).
+        asset = env.scene[_ROBOT.name]
+        ids = env._head_pose_neck_ids
+        q = asset.data.joint_pos
+        measured = q[:, ids] + q[:, env._head_pose_bl_ids] * env._head_pose_bl_mask
+        target = env.command_manager.get_command(command_name) + torch.tensor(fast_offset, device=env.device)
+        err = measured - asset.data.default_joint_pos[:, ids] - target
+        fast = torch.exp(-torch.square(err / fast_std)).mean(dim=-1)
     return (1.0 - gate) * slow + gate * fast
 
 
