@@ -11,8 +11,8 @@ together.
 
 ## Outcome
 
-**4.800 s → 1.334 s, 5/5** locally (run0 → LP-both-s1, checkpoint 1999). Published: K2 1999, **1.412 s** on the
-Space. The folder now holds LP-both's recipe (`env.py`, `rewards.py`) with a 2000-iteration `[recipe]` in
+**4.800 s → 1.233 s, 5/5** locally (run0 → LX-both3000-s1, checkpoint 2900). Published: K2 1999, **1.412 s** on the
+Space. The folder now holds LP-both's recipe (`env.py`, `rewards.py`) with a 3000-iteration `[recipe]` in
 `challenge.toml`: K2's, plus the running head pulled forward and the trunk pulled to a 12° lean.
 
 What the recipe changes against the folder as cloned, all kept by the runs below:
@@ -32,13 +32,13 @@ Checkpoints to choose from (all local, indicative):
 
 | Checkpoint | Score | Sweep | End y of the trace seed | Neighbours |
 |---|---|---|---|---|
-| **LP-both-s1 1999** (`2026-10-31_18-01-53_LP-both-s1`) | 1.334 s @0.75 | 1.31–1.41 s at all 21 vx | −0.27 m | every checkpoint from 200 is 5/5 |
-| LP-both-s2 1999 (`2026-10-31_18-01-58_LP-both-s2`) | 1.348 s @1.10 | 1.35–1.44 s at all 21 vx | +0.02 m | every checkpoint from 200 is 5/5 |
+| **LX-both3000-s1 2900** (`2026-11-01_03-41-59_LX-both3000-s1`) | 1.233 s @1.10 | 1.21–1.41 s at all 21 vx | +0.08 m | every checkpoint from 200 is 5/5 |
+| LX-both3000-s2 2900 (`2026-11-01_03-42-05_LX-both3000-s2`) | 1.263 s @0.55 | 1.24–1.32 s at all 21 vx | −0.01 m | every checkpoint from 200 is 5/5 |
+| LP-both-s1 1999 (`2026-10-31_18-01-53_LP-both-s1`) | 1.334 s @0.75 | 1.31–1.41 s at all 21 vx | −0.27 m | every checkpoint from 200 is 5/5 |
 | K2 1999 (`2026-10-30_20-27-50_K2-mirror-drift-s2`), published | 1.412 s @1.20 | 1.40–1.51 s at all 21 vx | −0.08 m | every checkpoint from 200 is 5/5 |
 
-Simulations on another CPU drift apart after a few seconds: a gait that ends 0.27 m off centre has 0.13 m of
-margin to a wall, one ending at 0.02 m has 0.38 m. LP-both-s2 is the safer of the two LP-both checkpoints for
-the Space.
+Simulations on another CPU drift apart after a few seconds; both LX 2900 checkpoints end within 0.08 m of
+centre (0.32 m of margin to a wall).
 
 What was learned (details per run below):
 - The original ceiling was the reward's shape, not the robot: speed tracking is a bell curve around the
@@ -219,8 +219,8 @@ Doubts, written down before running:
 | LP-both-s2 | ef41a22 | same, seed 2 | 1999 | 1.348 s | 5/5 | 1.10 | 19/19 5/5; head 39–57°, trunk 8–11° |
 | LP-headtarget-s2 | 6e4fc4a | LP-head, seed 2 | 1999 | 1.375 s | 5/5 | 0.80 | head 38–48° |
 | LP-trunktarget-s2 | c594e01 | LP-trunk, seed 2 | 1999 | 1.380 s | 5/5 | 1.10 | trunk 11–13° |
-| LX-both3000-s1 | 789ffc5 | LP-both, 3000 iterations | running | | | | |
-| LX-both3000-s2 | 789ffc5 | same, seed 2 | running | | | | |
+| **LX-both3000-s1** | 789ffc5 | LP-both, 3000 iterations | 2900 | **1.233 s** | 5/5 | 1.10 | −0.10 s vs LP-both-s1; 29/29 from 200 5/5 |
+| LX-both3000-s2 | 789ffc5 | same, seed 2 | 2900 | 1.263 s | 5/5 | 0.55 | −0.09 s vs LP-both-s2; 29/29 from 200 5/5 |
 
 Pollen reference: 4.883 s at 0.55 m/s.
 

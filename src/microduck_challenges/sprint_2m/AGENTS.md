@@ -44,7 +44,7 @@ observation noise.
 | File | What it holds | Change it? |
 |---|---|---|
 | `challenge.toml` `[params]` | The three knobs below | Yes, first. Keep each value within its `min`/`max` (the workshop refuses others) |
-| `challenge.toml` `[recipe]` | `num_envs` 4096, `max_iterations` 2000, `seed` 1 | Yes, when agreed with the user |
+| `challenge.toml` `[recipe]` | `num_envs` 4096, `max_iterations` 3000, `seed` 1 | Yes, when agreed with the user |
 | `env.py` | The whole environment: rewards, commands, domain randomization, curricula, terrain, `RL_CFG` (network, PPO, mirror loss, checkpoints every 100 iterations) | Yes, once the knobs are not enough |
 | `rewards.py` | The sprint's own reward and termination terms (`lane_progress`, `lane_drift`, `track_linear_velocity_at_least`, `upright_lean`, the speed-gated head terms, `lane_wall`); add a new one here, then to `cfg.rewards` in `env.py` | Yes |
 | `EXPERIMENTS.md` | Every run of this folder: commit, hypothesis, Arena numbers, reading. Read its Outcome first | Add each run |
@@ -235,7 +235,8 @@ fork, never `pollen-robotics`; the workshop's home sets that up).
   head 30–81° forward and the trunk 12–18°. Widening the head tolerance gained 0.33 s; freeing it entirely at
   speed brought the head to 24–41° (−0.06 s, two seeds). A wider forward-lean tolerance alone is never used
   (trunk stays at 0–3°). Pulling the running head to neck −1.0 rad, head +0.5 rad from home and the trunk to a
-  12° lean, both together, gave 1.334 and 1.348 s on two seeds (head 39–57°, trunk 8–12°), each target alone
+  12° lean, both together, gave 1.334 and 1.348 s on two seeds at 2000 iterations and 1.233 and 1.263 s at 3000
+  (head 39–57°, trunk 8–15°), each target alone
   less. Lean is measured by forward kinematics on the Arena trace (its trunk pose and joints set on
   `robot_walk.xml`): head lean = neck-base → head angle from vertical, trunk pitch from the trunk's z axis.
 - **Fast gaits fail on the lane's wall, not on balance.** Decode `trace_b64` in `workshop/model_<N>.json`
