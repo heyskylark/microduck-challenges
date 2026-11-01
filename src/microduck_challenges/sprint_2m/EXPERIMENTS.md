@@ -219,6 +219,8 @@ Doubts, written down before running:
 | LP-both-s2 | ef41a22 | same, seed 2 | 1999 | 1.348 s | 5/5 | 1.10 | 19/19 5/5; head 39–57°, trunk 8–11° |
 | LP-headtarget-s2 | 6e4fc4a | LP-head, seed 2 | 1999 | 1.375 s | 5/5 | 0.80 | head 38–48° |
 | LP-trunktarget-s2 | c594e01 | LP-trunk, seed 2 | 1999 | 1.380 s | 5/5 | 1.10 | trunk 11–13° |
+| LX-both3000-s1 | 789ffc5 | LP-both, 3000 iterations | running | | | | |
+| LX-both3000-s2 | 789ffc5 | same, seed 2 | running | | | | |
 
 Pollen reference: 4.883 s at 0.55 m/s.
 
