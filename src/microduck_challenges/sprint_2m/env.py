@@ -257,11 +257,12 @@ def make_env_cfg(
     # lean's std² widens 0.05 → 1.0 as lane speed goes 0.3 → 0.8 m/s (B1 had
     # 0.3). An 18° lean (the fastest entries') then costs 0.18/s, not 0.53/s.
     # Roll and backward lean keep std² 0.05. LP-trunk: at speed the trunk is
-    # also pulled forward to a 12° lean (std² 0.05 short of it): freeing the
+    # also pulled forward to a lean target (std² 0.05 short of it): freeing the
     # lean (L-T) left the trunk at 0–3°; the faster entries run at 12–18°.
+    # LY-trunk18: target 12° → 18° (12° reached 8–15°).
     cfg.rewards["upright"].func = sprint_rewards.upright_lean
     cfg.rewards["upright"].params.update(
-        {"lean_std": 1.0, "speed_lo": 0.3, "speed_hi": 0.8, "lean_target_deg": 12.0}
+        {"lean_std": 1.0, "speed_lo": 0.3, "speed_hi": 0.8, "lean_target_deg": 18.0}
     )
 
     # Foot-specific configurations. In mjlab 1.3.0 foot_swing_height is fully
