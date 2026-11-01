@@ -221,6 +221,10 @@ Doubts, written down before running:
 | LP-trunktarget-s2 | c594e01 | LP-trunk, seed 2 | 1999 | 1.380 s | 5/5 | 1.10 | trunk 11–13° |
 | **LX-both3000-s1** | 789ffc5 | LP-both, 3000 iterations | 2900 | **1.233 s** | 5/5 | 1.10 | −0.10 s vs LP-both-s1; 29/29 from 200 5/5 |
 | LX-both3000-s2 | 789ffc5 | same, seed 2 | 2900 | 1.263 s | 5/5 | 0.55 | −0.09 s vs LP-both-s2; 29/29 from 200 5/5 |
+| LY-trunk18-s1 | 4a67c0d | LX + trunk lean target 12° → 18° | running | | | | |
+| LY-trunk18-s2 | 4a67c0d | same, seed 2 | running | | | | |
+| LY-headtight-s1 | 06cee95 | LX + running head target σ 0.5 → 0.3 rad | running | | | | |
+| LY-headtight-s2 | 06cee95 | same, seed 2 | running | | | | |
 
 Pollen reference: 4.883 s at 0.55 m/s.
 
