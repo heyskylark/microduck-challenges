@@ -32,8 +32,8 @@ Checkpoints to choose from (all local, indicative):
 
 | Checkpoint | Score | Sweep | End y of the trace seed | Neighbours |
 |---|---|---|---|---|
-| **LP-both-s1 1999** (`2026-10-31_18-01-53_LP-both-s1`) | 1.334 s @0.75 | not swept | −0.27 m | every checkpoint from 200 is 5/5 |
-| LP-both-s2 1999 (`2026-10-31_18-01-58_LP-both-s2`) | 1.348 s @1.10 | not swept | +0.02 m | every checkpoint from 200 is 5/5 |
+| **LP-both-s1 1999** (`2026-10-31_18-01-53_LP-both-s1`) | 1.334 s @0.75 | 1.31–1.41 s at all 21 vx | −0.27 m | every checkpoint from 200 is 5/5 |
+| LP-both-s2 1999 (`2026-10-31_18-01-58_LP-both-s2`) | 1.348 s @1.10 | 1.35–1.44 s at all 21 vx | +0.02 m | every checkpoint from 200 is 5/5 |
 | K2 1999 (`2026-10-30_20-27-50_K2-mirror-drift-s2`), published | 1.412 s @1.20 | 1.40–1.51 s at all 21 vx | −0.08 m | every checkpoint from 200 is 5/5 |
 
 Simulations on another CPU drift apart after a few seconds: a gait that ends 0.27 m off centre has 0.13 m of
