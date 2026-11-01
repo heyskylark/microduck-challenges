@@ -88,7 +88,8 @@ K1/K2 are the baseline cell (seeds 1 and 2). g is the speed gate (0 below 0.3 m/
 | Batch | Runs | Commits |
 |---|---|---|
 | L1 (done) | LH-headfree-s1 · LT-lean10-s1 · LHT-headfree-lean10-s1 · LHT-headfree-lean10-s2 | 5172e1a · 185ad84 · 19ea1e9 |
-| L2 (running) | LH-headfree-s2 · LT-lean10-s2 · LP-headtarget-s1 · LP-trunktarget-s1 | 35edfa0 · e43d9d1 · 2a2f840 · e8b8e71 |
+| L2 (done) | LH-headfree-s2 · LT-lean10-s2 · LP-headtarget-s1 · LP-trunktarget-s1 | 35edfa0 · e43d9d1 · 2a2f840 · e8b8e71 |
+| L3 (running) | LP-both-s1 · LP-both-s2 · LP-headtarget-s2 · LP-trunktarget-s2 | ef41a22 · 6e4fc4a · c594e01 |
 
 L1 results (baseline cell: K1 1.463 s, K2 1.412 s; head lean 13°, trunk 1°):
 
@@ -107,6 +108,23 @@ L1 results (baseline cell: K1 1.463 s, K2 1.412 s; head lean 13°, trunk 1°):
 - So L2 swaps the planned conditional for **targets** on L-HT: the head pulled to the 1.0 s entries' pose (neck
   −1.0 rad, head +0.5 rad from home, σ 0.5 at speed), and the trunk pulled to 12° forward (std² 0.05 short of
   the target at speed). One seed each; LH and LT get their second seeds.
+
+L2 results:
+
+| Run | Best | 5/5 among 200–1999 | Head lean from 1000 on | Trunk pitch |
+|---|---|---|---|---|
+| LH s2 (head free) | 1.381 s @1900 | 18 of 18 | 29–36° | −2 to 1° |
+| LT s2 (lean σf² 1.0) | 1.469 s @1900 | 18 of 18 | 8–17° | −1 to 2° |
+| **LP-head s1** (head pulled to neck −1.0, head +0.5 rad) | **1.350 s** @1999 | **19 of 19** | **36–47°** | −1 to 0° |
+| LP-trunk s1 (trunk pulled to 12°) | 1.357 s @1999 | 18 of 19 (700 4/5) | 12–19° | **11–14°** |
+
+The 2×2 on two seeds each (means): baseline (K1, K2) 1.438 s · H 1.375 s · T 1.460 s · H+T 1.374 s. Freeing the head
+is worth −0.06 s; freeing the trunk 0; they do not interact.
+
+Targets get the lean that freedom did not: the head target 36–47° (free: 24–41°), the trunk target 12–14° (free:
+0–3°). Both are the fastest runs of the log, one seed each, still improving at 1999 (LP-head 1.40 → 1.35 over its
+last 500 iterations). With the trunk pulled forward the head leans less (12–19°): the trunk takes over part of
+the head's job. Next (L3): both targets together on two seeds, and each target's second seed.
 
 Judged on the score, on the share of checkpoints from 1000 on that are 5/5, and on the head lean and trunk pitch
 per checkpoint (`report.py` now prints both from the Arena trace).
@@ -175,10 +193,14 @@ Doubts, written down before running:
 | LT-lean10-s1 | 185ad84 | K2 + forward-lean σf² 0.3 → 1.0 | 1900 | 1.451 s | 5/5 | 1.20 | ≈ K1: trunk stays at 0–3° |
 | **LHT-headfree-lean10-s1** | 19ea1e9 | K2 + both | 1700 | **1.364 s** | 5/5 | 1.10 | −0.05 s vs K2; 1500, 1900 4/5 |
 | LHT-headfree-lean10-s2 | 19ea1e9 | same, seed 2 | 1500 | 1.383 s | 5/5 | 1.20 | every checkpoint from 300 5/5 |
-| LH-headfree-s2 | 35edfa0 | LH, seed 2 | running | | | | |
-| LT-lean10-s2 | e43d9d1 | LT, seed 2 | running | | | | |
-| LP-headtarget-s1 | 2a2f840 | LHT + running head pulled to neck −1.0, head +0.5 rad | running | | | | |
-| LP-trunktarget-s1 | e8b8e71 | LHT + trunk pulled to 12° forward at speed | running | | | | |
+| LH-headfree-s2 | 35edfa0 | LH, seed 2 | 1900 | 1.381 s | 5/5 | 0.30 | replicates LH (1.37–1.38) |
+| LT-lean10-s2 | e43d9d1 | LT, seed 2 | 1900 | 1.469 s | 5/5 | 0.95 | replicates LT: no gain |
+| **LP-headtarget-s1** | 2a2f840 | LHT + running head pulled to neck −1.0, head +0.5 rad | 1999 | **1.350 s** | 5/5 | 1.20 | −0.06 s vs K2; head 36–47°; 19/19 5/5 |
+| LP-trunktarget-s1 | e8b8e71 | LHT + trunk pulled to 12° forward at speed | 1999 | 1.357 s | 5/5 | 1.20 | trunk 12–14°, head 12–19° |
+| LP-both-s1 | ef41a22 | head target + trunk target | running | | | | |
+| LP-both-s2 | ef41a22 | same, seed 2 | running | | | | |
+| LP-headtarget-s2 | 6e4fc4a | LP-head, seed 2 | running | | | | |
+| LP-trunktarget-s2 | c594e01 | LP-trunk, seed 2 | running | | | | |
 
 Pollen reference: 4.883 s at 0.55 m/s.
 
