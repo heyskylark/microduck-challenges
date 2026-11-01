@@ -257,12 +257,11 @@ def make_env_cfg(
     # lean's std² widens 0.05 → 1.0 as lane speed goes 0.3 → 0.8 m/s (B1 had
     # 0.3). An 18° lean (the fastest entries') then costs 0.18/s, not 0.53/s.
     # Roll and backward lean keep std² 0.05. LP-trunk: at speed the trunk is
-    # also pulled forward to a lean target (std² 0.05 short of it): freeing the
+    # also pulled forward to a 12° lean (std² 0.05 short of it): freeing the
     # lean (L-T) left the trunk at 0–3°; the faster entries run at 12–18°.
-    # LY-trunk18: target 12° → 18° (12° reached 8–15°).
     cfg.rewards["upright"].func = sprint_rewards.upright_lean
     cfg.rewards["upright"].params.update(
-        {"lean_std": 1.0, "speed_lo": 0.3, "speed_hi": 0.8, "lean_target_deg": 18.0}
+        {"lean_std": 1.0, "speed_lo": 0.3, "speed_hi": 0.8, "lean_target_deg": 12.0}
     )
 
     # Foot-specific configurations. In mjlab 1.3.0 foot_swing_height is fully
@@ -707,13 +706,14 @@ def make_env_cfg(
     # reward is the mean over 4 joints, so partial tracking is partial reward
     # (no all-or-nothing).
     # B4 (EXPERIMENTS.md): the head's tolerance widens from 0.5 rad as lane
-    # speed goes 0.3 → 0.8 m/s. LP-head: at full speed the head is pulled
-    # (σ 0.5 rad) to neck −1.0 rad, head +0.5 rad from home: the pose of the
-    # entries at 1.0–1.1 s (neck 55–72° forward, head 30–36° back, lean 58–81°).
+    # speed goes 0.3 → 0.8 m/s. LP-head: at full speed the head is pulled to
+    # neck −1.0 rad, head +0.5 rad from home: the pose of the entries at
+    # 1.0–1.1 s (neck 55–72° forward, head 30–36° back, lean 58–81°).
+    # LY-headtight: that pull's σ 0.5 → 0.3 rad (σ 0.5 left the head at 39–57°).
     cfg.rewards["head_pose_tracking"] = RewardTermCfg(
         func=sprint_rewards.head_pose_tracking_at_speed,
         weight=2.0,
-        params={"command_name": "head_pose", "std": 0.5, "fast_std": 0.5,
+        params={"command_name": "head_pose", "std": 0.5, "fast_std": 0.3,
                 "fast_offset": (-1.0, 0.5, 0.0, 0.0), "speed_lo": 0.3, "speed_hi": 0.8},
     )
     # body_pose: infra kept intact but DISABLED (weight 0) — the obs slot and
