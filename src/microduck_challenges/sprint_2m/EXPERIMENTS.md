@@ -11,9 +11,9 @@ together.
 
 ## Outcome
 
-**4.800 s → 1.412 s, 5/5** (run0 → K2, checkpoint 1999). The folder now holds K1/K2's recipe (`env.py`, `rewards.py`)
-with a 2000-iteration `[recipe]` in `challenge.toml`. The fastest single checkpoint is K4's 1999 at 1.359 s, from
-a less robust recipe (see below). Nothing has been published.
+**4.800 s → 1.334 s, 5/5** locally (run0 → LP-both-s1, checkpoint 1999). Published: K2 1999, **1.412 s** on the
+Space. The folder now holds LP-both's recipe (`env.py`, `rewards.py`) with a 2000-iteration `[recipe]` in
+`challenge.toml`: K2's, plus the running head pulled forward and the trunk pulled to a 12° lean.
 
 What the recipe changes against the folder as cloned, all kept by the runs below:
 
@@ -22,8 +22,8 @@ What the recipe changes against the folder as cloned, all kept by the runs below
 | `lane_progress` = 10 · clip(v along the spawn heading, 0, 2)/2, whatever the command | `rewards.py`, `env.py` | A2, E3 | −1.9 s, then −0.23 s |
 | `action_rate_l2` ramp capped at −0.3 (was −1.0 by 1500) | `env.py` curriculum | B2 | −0.73 s |
 | Forward tracking one-sided: going faster than the command costs nothing | `rewards.py` `track_linear_velocity_at_least` | D1 | −0.28 s |
-| Head tolerance 0.5 → 1.0 rad and `head_pose_bias` faded out with speed | `rewards.py` head terms | B4 | −0.33 s |
-| Forward-lean tolerance widened with speed (std² 0.05 → 0.3) | `rewards.py` `upright_lean` | B1 | −0.03 s |
+| Head: tolerance 0.5 → 1.0 rad, `head_pose_bias` faded out with speed; then at full speed pulled to neck −1.0 rad, head +0.5 rad from home | `rewards.py` head terms | B4, LP | −0.33 s; then −0.06 s (free) and −0.01 s more (target) |
+| Trunk: forward-lean tolerance widened with speed (std² 0.05 → 1.0); then pulled to a 12° lean at speed | `rewards.py` `upright_lean` | B1, LP | −0.03 s; freedom alone unused; the target −0.03 s with the head target |
 | Standing envs held at 2% (was ramped to 25%) | `env.py` curriculum | G3 | −0.05 s |
 | Mirror-symmetry loss (`ENABLE_SYMMETRY`) | `env.py` | I2 | late checkpoints off the wall |
 | `lane_drift` = 2 · exp(−v_across² / 0.15²) | `rewards.py`, `env.py` | I3 | late checkpoints off the wall |
@@ -32,12 +32,13 @@ Checkpoints to choose from (all local, indicative):
 
 | Checkpoint | Score | Sweep | End y of the trace seed | Neighbours |
 |---|---|---|---|---|
-| **K2 1999** (`2026-10-30_20-27-50_K2-mirror-drift-s2`) | 1.412 s @1.20 | 1.40–1.51 s at all 21 vx | −0.08 m | every checkpoint from 200 is 5/5 |
-| K4 1999 (`2026-10-30_21-02-01_K4-mirror-s2`) | 1.359 s @0.65 | not swept | −0.25 m | 1800 is 3/5 |
-| K1 1999 (`2026-10-30_18-56-28_K1-mirror-drift`) | 1.463 s @1.05 | 1.42–1.47 s at all 21 vx | −0.07 m | every checkpoint from 200 is 5/5 |
+| **LP-both-s1 1999** (`2026-10-31_18-01-53_LP-both-s1`) | 1.334 s @0.75 | not swept | −0.27 m | every checkpoint from 200 is 5/5 |
+| LP-both-s2 1999 (`2026-10-31_18-01-58_LP-both-s2`) | 1.348 s @1.10 | not swept | +0.02 m | every checkpoint from 200 is 5/5 |
+| K2 1999 (`2026-10-30_20-27-50_K2-mirror-drift-s2`), published | 1.412 s @1.20 | 1.40–1.51 s at all 21 vx | −0.08 m | every checkpoint from 200 is 5/5 |
 
-Simulations on another CPU drift apart after a few seconds; a gait that ends 0.25 m off centre has 0.15 m of
-margin to a wall, one ending at 0.08 m has 0.3 m. That is why K2 is recommended over K4.
+Simulations on another CPU drift apart after a few seconds: a gait that ends 0.27 m off centre has 0.13 m of
+margin to a wall, one ending at 0.02 m has 0.38 m. LP-both-s2 is the safer of the two LP-both checkpoints for
+the Space.
 
 What was learned (details per run below):
 - The original ceiling was the reward's shape, not the robot: speed tracking is a bell curve around the
@@ -89,7 +90,7 @@ K1/K2 are the baseline cell (seeds 1 and 2). g is the speed gate (0 below 0.3 m/
 |---|---|---|
 | L1 (done) | LH-headfree-s1 · LT-lean10-s1 · LHT-headfree-lean10-s1 · LHT-headfree-lean10-s2 | 5172e1a · 185ad84 · 19ea1e9 |
 | L2 (done) | LH-headfree-s2 · LT-lean10-s2 · LP-headtarget-s1 · LP-trunktarget-s1 | 35edfa0 · e43d9d1 · 2a2f840 · e8b8e71 |
-| L3 (running) | LP-both-s1 · LP-both-s2 · LP-headtarget-s2 · LP-trunktarget-s2 | ef41a22 · 6e4fc4a · c594e01 |
+| L3 (done) | LP-both-s1 · LP-both-s2 · LP-headtarget-s2 · LP-trunktarget-s2 | ef41a22 · 6e4fc4a · c594e01 |
 
 L1 results (baseline cell: K1 1.463 s, K2 1.412 s; head lean 13°, trunk 1°):
 
@@ -125,6 +126,23 @@ Targets get the lean that freedom did not: the head target 36–47° (free: 24�
 0–3°). Both are the fastest runs of the log, one seed each, still improving at 1999 (LP-head 1.40 → 1.35 over its
 last 500 iterations). With the trunk pulled forward the head leans less (12–19°): the trunk takes over part of
 the head's job. Next (L3): both targets together on two seeds, and each target's second seed.
+
+L3 results, and the targets' grid on two seeds (each target on the L-HT base: head free, σf² 1.0):
+
+| Cell | Seed 1 | Seed 2 | Mean | Head lean (late) | Trunk pitch (late) | 5/5 among 200–1999 |
+|---|---|---|---|---|---|---|
+| L-HT (no target) | 1.364 | 1.383 | 1.374 s | 24–36° | −1 to 2° | 17 + 18 of 18 |
+| head target | 1.350 | 1.375 | 1.363 s | 36–48° | −3 to 0° | 19 + 18 of 19 |
+| trunk target | 1.357 | 1.380 | 1.369 s | 14–24° | 11–14° | 18 + 19 of 19 |
+| **both targets** | **1.334** | **1.348** | **1.341 s** | **39–57°** | **8–12°** | **19 + 19 of 19** |
+
+- Both targets together beat either alone on each seed (s1: 1.334 vs 1.350/1.357; s2: 1.348 vs 1.375/1.380), and
+  are the only cell 5/5 at every checkpoint from 200 on both seeds. −0.03 s on L-HT, −0.10 s on K2's recipe.
+- Each target alone is within seed noise of L-HT; together they add up to more than either.
+- Every L3 run is still improving at 1999 (LP-both-s1: 1.41 → 1.33 over its last 500 iterations): a longer run
+  is the obvious next test.
+- Still short of the 1.0–1.1 s entries' 58–81° head and 12–18° trunk: head lean is 39–57° with the target at the
+  pose of those entries' joints, because the head target's σ (0.5 rad) leaves room.
 
 Judged on the score, on the share of checkpoints from 1000 on that are 5/5, and on the head lean and trunk pitch
 per checkpoint (`report.py` now prints both from the Arena trace).
@@ -197,10 +215,10 @@ Doubts, written down before running:
 | LT-lean10-s2 | e43d9d1 | LT, seed 2 | 1900 | 1.469 s | 5/5 | 0.95 | replicates LT: no gain |
 | **LP-headtarget-s1** | 2a2f840 | LHT + running head pulled to neck −1.0, head +0.5 rad | 1999 | **1.350 s** | 5/5 | 1.20 | −0.06 s vs K2; head 36–47°; 19/19 5/5 |
 | LP-trunktarget-s1 | e8b8e71 | LHT + trunk pulled to 12° forward at speed | 1999 | 1.357 s | 5/5 | 1.20 | trunk 12–14°, head 12–19° |
-| LP-both-s1 | ef41a22 | head target + trunk target | running | | | | |
-| LP-both-s2 | ef41a22 | same, seed 2 | running | | | | |
-| LP-headtarget-s2 | 6e4fc4a | LP-head, seed 2 | running | | | | |
-| LP-trunktarget-s2 | c594e01 | LP-trunk, seed 2 | running | | | | |
+| **LP-both-s1** | ef41a22 | head target + trunk target | 1999 | **1.334 s** | 5/5 | 0.75 | −0.08 s vs K2; best of the log; 19/19 5/5 |
+| LP-both-s2 | ef41a22 | same, seed 2 | 1999 | 1.348 s | 5/5 | 1.10 | 19/19 5/5; head 39–57°, trunk 8–11° |
+| LP-headtarget-s2 | 6e4fc4a | LP-head, seed 2 | 1999 | 1.375 s | 5/5 | 0.80 | head 38–48° |
+| LP-trunktarget-s2 | c594e01 | LP-trunk, seed 2 | 1999 | 1.380 s | 5/5 | 1.10 | trunk 11–13° |
 
 Pollen reference: 4.883 s at 0.55 m/s.
 

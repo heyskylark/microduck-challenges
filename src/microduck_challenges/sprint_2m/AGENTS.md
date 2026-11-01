@@ -231,8 +231,12 @@ fork, never `pollen-robotics`; the workshop's home sets that up).
   one-sided `track_linear_velocity` took the score from 4.8 s to 1.5 s; progress weight 20 collapses.
   The policy then runs one gait (about 1.4 s) at every commanded vx.
 - **`action_rate_l2` at −1.0 is a brake**: capping its ramp at −0.3 gained 0.73 s.
-- **Free the head at speed**: widening `head_pose_tracking` and fading `head_pose_bias` out with lane speed
-  gained 0.33 s (the head is 38% of the mass).
+- **Lean the head and trunk forward at speed, by targets, not freedom.** The entries at 1.0–1.1 s carry the
+  head 30–81° forward and the trunk 12–18°. Widening the head tolerance gained 0.33 s; freeing it entirely at
+  speed brought the head to 24–41° (−0.06 s, two seeds). A wider forward-lean tolerance alone is never used
+  (trunk stays at 0–3°). Pulling the running head to neck −1.0 rad, head +0.5 rad from home and the trunk to a
+  12° lean, both together, gave 1.334 and 1.348 s on two seeds (head 39–57°, trunk 8–12°), each target alone
+  less. `report.py`'s lean readout comes from forward kinematics on the Arena trace.
 - **Fast gaits fail on the lane's wall, not on balance.** Decode `trace_b64` in `workshop/model_<N>.json`
   (base64 float32, 21 per frame: trunk x, y, z, quaternion w, x, y, z, 14 joints): failing
   checkpoints end at y ≈ ±0.33 m against walls at ±0.4. Training has no wall. A tighter `heading_hold`
