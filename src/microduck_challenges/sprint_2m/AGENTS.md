@@ -236,7 +236,8 @@ fork, never `pollen-robotics`; the workshop's home sets that up).
   speed brought the head to 24–41° (−0.06 s, two seeds). A wider forward-lean tolerance alone is never used
   (trunk stays at 0–3°). Pulling the running head to neck −1.0 rad, head +0.5 rad from home and the trunk to a
   12° lean, both together, gave 1.334 and 1.348 s on two seeds (head 39–57°, trunk 8–12°), each target alone
-  less. `report.py`'s lean readout comes from forward kinematics on the Arena trace.
+  less. Lean is measured by forward kinematics on the Arena trace (its trunk pose and joints set on
+  `robot_walk.xml`): head lean = neck-base → head angle from vertical, trunk pitch from the trunk's z axis.
 - **Fast gaits fail on the lane's wall, not on balance.** Decode `trace_b64` in `workshop/model_<N>.json`
   (base64 float32, 21 per frame: trunk x, y, z, quaternion w, x, y, z, 14 joints): failing
   checkpoints end at y ≈ ±0.33 m against walls at ±0.4. Training has no wall. A tighter `heading_hold`
