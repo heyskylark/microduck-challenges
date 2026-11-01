@@ -706,13 +706,14 @@ def make_env_cfg(
     # reward is the mean over 4 joints, so partial tracking is partial reward
     # (no all-or-nothing).
     # B4 (EXPERIMENTS.md): the head's tolerance widens from 0.5 rad as lane
-    # speed goes 0.3 → 0.8 m/s. L-H: at full speed the head is free (pays 1
-    # whatever its pose): the faster entries carry it 30–81° forward.
+    # speed goes 0.3 → 0.8 m/s. LP-head: at full speed the head is pulled
+    # (σ 0.5 rad) to neck −1.0 rad, head +0.5 rad from home: the pose of the
+    # entries at 1.0–1.1 s (neck 55–72° forward, head 30–36° back, lean 58–81°).
     cfg.rewards["head_pose_tracking"] = RewardTermCfg(
         func=sprint_rewards.head_pose_tracking_at_speed,
         weight=2.0,
-        params={"command_name": "head_pose", "std": 0.5, "fast_std": None,
-                "speed_lo": 0.3, "speed_hi": 0.8},
+        params={"command_name": "head_pose", "std": 0.5, "fast_std": 0.5,
+                "fast_offset": (-1.0, 0.5, 0.0, 0.0), "speed_lo": 0.3, "speed_hi": 0.8},
     )
     # body_pose: infra kept intact but DISABLED (weight 0) — the obs slot and
     # command stay alive for envs that raise the weight (standup).
