@@ -144,6 +144,29 @@ L3 results, and the targets' grid on two seeds (each target on the L-HT base: he
 - Still short of the 1.0–1.1 s entries' 58–81° head and 12–18° trunk: head lean is 39–57° with the target at the
   pose of those entries' joints, because the head target's σ (0.5 rad) leaves room.
 
+### LX: LP-both for 3000 iterations (commit 789ffc5)
+| Run | Best | At 1999 | At 2900 | Head lean (late) | Trunk pitch (late) | 5/5 among 200–2999 |
+|---|---|---|---|---|---|---|
+| LX s1 | **1.233 s** @2900 | 1.34 s | 1.23 s | 41–53° | 10–13° | 29 of 29 |
+| LX s2 | 1.263 s @2900 | 1.34 s | 1.26 s | 38–56° | 10–15° | 29 of 29 |
+
+−0.10 and −0.09 s over the 2000-iteration runs. Both best checkpoints finish at all 21 vx (1.21–1.41 s and
+1.24–1.32 s) and end within 0.08 m of centre. The gain is flattening by 2500–2900, and the lean does not grow
+with the extra iterations. The recipe is now 3000 iterations.
+
+### LY: pushing the lean further, on LX, two seeds each (commits 4a67c0d, 06cee95)
+| Cell | Seed 1 | Seed 2 | Mean | Head lean (late) | Trunk pitch (late) |
+|---|---|---|---|---|---|
+| LX (target 12°, head σ 0.5) | **1.233** | **1.263** | **1.248 s** | 38–56° | 10–15° |
+| trunk target 18° | 1.281 | 1.285 | 1.283 s | 45–64° | 17–22° |
+| head target σ 0.3 rad | 1.267 | 1.280 | 1.274 s | 42–64° | 9–14° |
+
+- Refuted on both seeds: each push gets its lean (the trunk at 17–22°, the head reaching 60–64° at times), and
+  costs 0.02–0.05 s. Every checkpoint of all four stays 5/5.
+- Both learn more slowly (at 1400: 1.53–1.66 s against LX's 1.44–1.49) and never catch up.
+- So LX's posture (head ~45°, trunk ~11°) is about where this recipe is fastest; the 1.0–1.1 s entries' extra
+  lean is not what makes them faster here. The recipe stays LX.
+
 Judged on the score, on the share of checkpoints from 1000 on that are 5/5, and on the head lean and trunk pitch
 per checkpoint (`report.py` now prints both from the Arena trace).
 
@@ -221,10 +244,10 @@ Doubts, written down before running:
 | LP-trunktarget-s2 | c594e01 | LP-trunk, seed 2 | 1999 | 1.380 s | 5/5 | 1.10 | trunk 11–13° |
 | **LX-both3000-s1** | 789ffc5 | LP-both, 3000 iterations | 2900 | **1.233 s** | 5/5 | 1.10 | −0.10 s vs LP-both-s1; 29/29 from 200 5/5 |
 | LX-both3000-s2 | 789ffc5 | same, seed 2 | 2900 | 1.263 s | 5/5 | 0.55 | −0.09 s vs LP-both-s2; 29/29 from 200 5/5 |
-| LY-trunk18-s1 | 4a67c0d | LX + trunk lean target 12° → 18° | running | | | | |
-| LY-trunk18-s2 | 4a67c0d | same, seed 2 | running | | | | |
-| LY-headtight-s1 | 06cee95 | LX + running head target σ 0.5 → 0.3 rad | running | | | | |
-| LY-headtight-s2 | 06cee95 | same, seed 2 | running | | | | |
+| LY-trunk18-s1 | 4a67c0d | LX + trunk lean target 12° → 18° | 2800 | 1.281 s | 5/5 | 1.05 | +0.05 s vs LX-s1; trunk 17–22°, head 45–63° |
+| LY-trunk18-s2 | 4a67c0d | same, seed 2 | 2800 | 1.285 s | 5/5 | 1.20 | +0.02 s vs LX-s2: refuted |
+| LY-headtight-s1 | 06cee95 | LX + running head target σ 0.5 → 0.3 rad | 2900 | 1.267 s | 5/5 | 0.60 | +0.03 s vs LX-s1; head 42–60° |
+| LY-headtight-s2 | 06cee95 | same, seed 2 | 2900 | 1.280 s | 5/5 | 1.20 | +0.02 s vs LX-s2: refuted |
 
 Pollen reference: 4.883 s at 0.55 m/s.
 
