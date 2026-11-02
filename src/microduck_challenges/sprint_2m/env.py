@@ -709,13 +709,11 @@ def make_env_cfg(
     # speed goes 0.3 → 0.8 m/s. LP-head: at full speed the head is pulled
     # (σ 0.5 rad) to neck −1.0 rad, head +0.5 rad from home: the pose of the
     # entries at 1.0–1.1 s (neck 55–72° forward, head 30–36° back, lean 58–81°).
-    # H: the sub-1 s entries run with the neck 81–89° down and the head in line
-    # (−5° to −12°); the target moves there: neck −1.45 rad, head 0.
     cfg.rewards["head_pose_tracking"] = RewardTermCfg(
         func=sprint_rewards.head_pose_tracking_at_speed,
         weight=2.0,
         params={"command_name": "head_pose", "std": 0.5, "fast_std": 0.5,
-                "fast_offset": (-1.45, 0.0, 0.0, 0.0), "speed_lo": 0.3, "speed_hi": 0.8},
+                "fast_offset": (-1.0, 0.5, 0.0, 0.0), "speed_lo": 0.3, "speed_hi": 0.8},
     )
     # body_pose: infra kept intact but DISABLED (weight 0) — the obs slot and
     # command stay alive for envs that raise the weight (standup).
@@ -758,14 +756,14 @@ def make_env_cfg(
     # action_rate weight ramp: gentle smoothing while the gait bootstraps, then
     # capped at -0.3 (EXPERIMENTS.md, B2; was -1.0 by iter 1500): in A1 and A2
     # the Arena score was best at 700-1000 and worsened as this ramp tightened.
+    # A: held at -0.1 for the whole run. The sub-1 s entries switch their
+    # targets 4-5x harder (sum of squared action change 17-25 per step, ours 5).
     cfg.curriculum["action_rate_weight"] = CurriculumTermCfg(
         func=microduck_mdp.reward_weight,
         params={
             "reward_name": "action_rate_l2",
             "weight_stages": [
                 {"step": 0, "weight": -0.1},
-                {"step": 500 * NUM_STEPS_PER_ENV, "weight": -0.2},
-                {"step": 750 * NUM_STEPS_PER_ENV, "weight": -0.3},
             ],
         },
     )
