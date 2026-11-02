@@ -259,12 +259,9 @@ def make_env_cfg(
     # Roll and backward lean keep std² 0.05. LP-trunk: at speed the trunk is
     # also pulled forward to a 12° lean (std² 0.05 short of it): freeing the
     # lean (L-T) left the trunk at 0–3°; the faster entries run at 12–18°.
-    # W1: roll's std² also widens, 0.05 → 0.5, with speed: the sub-1 s entries
-    # rock the trunk 15–33° (σ) once per stride; ours rocks 4°.
     cfg.rewards["upright"].func = sprint_rewards.upright_lean
     cfg.rewards["upright"].params.update(
-        {"lean_std": 1.0, "speed_lo": 0.3, "speed_hi": 0.8, "lean_target_deg": 12.0,
-         "roll_std": math.sqrt(0.5)}
+        {"lean_std": 1.0, "speed_lo": 0.3, "speed_hi": 0.8, "lean_target_deg": 12.0}
     )
 
     # Foot-specific configurations. In mjlab 1.3.0 foot_swing_height is fully
@@ -302,7 +299,9 @@ def make_env_cfg(
     cfg.rewards["air_time"].params["threshold_min"] = 0.125
     cfg.rewards["air_time"].params["threshold_max"] = 0.300
 
-    cfg.rewards["body_ang_vel"].weight = -0.05
+    # W2: -0.05 → -0.01. The sub-1 s entries rock the trunk once per stride
+    # (roll/pitch rate² ≈ 50 against our 6): at -0.05 that costs ≈ 2.7/step.
+    cfg.rewards["body_ang_vel"].weight = -0.01
     cfg.rewards["angular_momentum"].weight = -0.02
 
     # Velocity tracking rewards. Forward speed is tracked one-sided while
