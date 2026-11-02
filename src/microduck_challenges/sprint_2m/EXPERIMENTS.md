@@ -51,7 +51,7 @@ What was learned (details per run below):
   and `lane_drift` do; a wall termination does too, at a cost of ~0.1 s (J batch).
 - Fall penalties, γ 0.995 and progress weight 20 did not help (F1, F2, G1).
 
-## Next: the lean ablations (running) and what waits
+## Next: the gait batch (running) and what waits
 
 ### Head and trunk lean: what the faster entries do
 Measured in the Arena's own race (trace forward kinematics, steady running, the first quarter skipped). Head lean
@@ -173,6 +173,47 @@ per checkpoint (`report.py` now prints both from the Arena trace).
 Evaluation note: with four trainings on the GPU (23.8 GB of 24.5), the evaluator's ONNX export ran out of GPU
 memory; it now runs with `CUDA_VISIBLE_DEVICES=` (export and race on the CPU). Arena 0.7.0 (from the upstream
 merge) re-scored every stored checkpoint; the scores match the 0.5.1 ones (K2 1999: 1.412 s).
+
+### The gait batch: head, switching, rocking, speed cap (commits 97a47d8, bacd8a0, a519324, 0b7f5c1, c0287c8)
+What the sub-1 s entries do that LX does not, measured in the Arena's race on unseen seeds 6–10 (lookup
+entries fall back to their network there) at each entry's scored vx, the policy's actions recorded next to the
+trace (`logs/analysis/gait.py`; steady part from 0.3 s):
+
+| Policy | Time | Steady speed | Neck / head from home | Head lean | Trunk roll σ (p5–p95) | Σ(Δa)² per step | Leg error past the current limit | Leg joint speed |
+|---|---|---|---|---|---|---|---|---|
+| sudhirmts | 0.906 s | 2.32 m/s | −84° / −8° | 78° | 16.0° (50°) | 24.3 | 80% | 7.4 rad/s |
+| dadudu (fallback) | 0.936 s | 2.23 m/s | −81° / −12° | 71° | 15.4° (47°) | 24.0 | 80% | 7.1 rad/s |
+| namenu | 0.948 s | 2.17 m/s | −63° / +19° | 64° | 21.7° (66°) | 24.6 | 82% | 7.2 rad/s |
+| Arcod | 1.000 s | 2.11 m/s | −89° / −5° | 69° | 33.2° (104°) | 16.9 | 78% | 6.8 rad/s |
+| bat-cha | 1.087 s | 1.99 m/s | −57° / +33° | 55° | 9.6° (28°) | 10.3 | 83% | 7.7 rad/s |
+| almuli | 1.099 s | 1.89 m/s | −71° / −19° | 42° | 10.0° (31°) | 20.1 | 78% | 7.2 rad/s |
+| **LX s1** | 1.238 s | 1.77 m/s | −52° / +34° | 56° | 4.1° (12°) | 5.3 | 76% | 7.8 rad/s |
+| LX s2 | 1.262 s | 1.67 m/s | −47° / +31° | 49° | 4.5° (15°) | 4.7 | 76% | 7.8 rad/s |
+
+- **Head**: LX sits on its target (neck −1.0, head +0.5 rad = −57°/+29°); the fastest run the neck 81–89° down with
+  the head in line. LY tightened the tolerance around the old target; the target itself never moved.
+- **Legs**: the servo is current-limited once the target is ≥ 1.16 rad from the joint (`arena/actuator.py`), and
+  every policy sits there 66–87% of the time at the same joint speed. What differs is how hard the targets
+  switch: Σ(Δa)² 17–25 against LX's 5 (−7.3/step against −1.6 at the −0.3 cap).
+- **Rocking**: the trunk rolls once per stride (roll frequency = stride frequency), 15–33° σ against LX's 4°.
+  `upright` (std² 0.05) keeps 0.49 of itself at sudhirmts's roll, 0.91 at LX's; `body_ang_vel` costs ≈ −2.7/step
+  against −0.3. (`track_angular_velocity`'s roll/pitch part already pays ~0 at speed: B3 loosened it for nothing.)
+- **Speed cap**: the fastest run 2.1–2.3 m/s steady; `lane_progress` pays nothing above v_ref 2.0.
+
+One change each on LX (f516666), 3000 iterations; seed 1 first (four fit the GPU at 5.7 GB each, V waits for a
+slot), then seed 2 of all five.
+
+| ID | Change | Commit |
+|---|---|---|
+| H | running head target neck −1.0 → −1.45 rad, head +0.5 → 0 | 97a47d8 |
+| A | `action_rate_l2` held at −0.1 (no ramp to −0.3) | bacd8a0 |
+| W1 | `upright` roll std² 0.05 → 0.5 with speed (new `roll_std` in `upright_lean`) | a519324 |
+| W2 | `body_ang_vel` −0.05 → −0.01 | 0b7f5c1 |
+| V | `lane_progress` v_ref 2.0 → 3.0 m/s, weight 10 → 15 (same pay per m/s) | c0287c8 |
+
+Doubts, before running: B2 showed the action-rate ramp was the main brake, so A has history behind it; B3 showed
+freeing a rocking tax can leave the gait unchanged, which W1/W2 may repeat; V does not bind until a run passes
+2.0 m/s steady (LX: 1.77).
 
 ### Waiting: M1/M2, on hold
 | ID | Change | Hypothesis |
