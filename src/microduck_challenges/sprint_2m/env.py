@@ -259,9 +259,12 @@ def make_env_cfg(
     # Roll and backward lean keep std² 0.05. LP-trunk: at speed the trunk is
     # also pulled forward to a 12° lean (std² 0.05 short of it): freeing the
     # lean (L-T) left the trunk at 0–3°; the faster entries run at 12–18°.
+    # W1: roll's std² also widens, 0.05 → 0.5, with speed: the sub-1 s entries
+    # rock the trunk 15–33° (σ) once per stride; ours rocks 4°.
     cfg.rewards["upright"].func = sprint_rewards.upright_lean
     cfg.rewards["upright"].params.update(
-        {"lean_std": 1.0, "speed_lo": 0.3, "speed_hi": 0.8, "lean_target_deg": 12.0}
+        {"lean_std": 1.0, "speed_lo": 0.3, "speed_hi": 0.8, "lean_target_deg": 12.0,
+         "roll_std": math.sqrt(0.5)}
     )
 
     # Foot-specific configurations. In mjlab 1.3.0 foot_swing_height is fully
@@ -756,14 +759,14 @@ def make_env_cfg(
     # action_rate weight ramp: gentle smoothing while the gait bootstraps, then
     # capped at -0.3 (EXPERIMENTS.md, B2; was -1.0 by iter 1500): in A1 and A2
     # the Arena score was best at 700-1000 and worsened as this ramp tightened.
-    # A: held at -0.1 for the whole run. The sub-1 s entries switch their
-    # targets 4-5x harder (sum of squared action change 17-25 per step, ours 5).
     cfg.curriculum["action_rate_weight"] = CurriculumTermCfg(
         func=microduck_mdp.reward_weight,
         params={
             "reward_name": "action_rate_l2",
             "weight_stages": [
                 {"step": 0, "weight": -0.1},
+                {"step": 500 * NUM_STEPS_PER_ENV, "weight": -0.2},
+                {"step": 750 * NUM_STEPS_PER_ENV, "weight": -0.3},
             ],
         },
     )
