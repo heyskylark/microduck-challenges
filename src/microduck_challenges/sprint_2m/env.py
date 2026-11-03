@@ -299,7 +299,9 @@ def make_env_cfg(
     cfg.rewards["air_time"].params["threshold_min"] = 0.125
     cfg.rewards["air_time"].params["threshold_max"] = 0.300
 
-    cfg.rewards["body_ang_vel"].weight = -0.05
+    # W2: -0.05 → -0.01. The sub-1 s entries rock the trunk once per stride
+    # (roll/pitch rate² ≈ 50 against our 6): at -0.05 that costs ≈ 2.7/step.
+    cfg.rewards["body_ang_vel"].weight = -0.01
     cfg.rewards["angular_momentum"].weight = -0.02
 
     # Velocity tracking rewards. Forward speed is tracked one-sided while
@@ -709,13 +711,11 @@ def make_env_cfg(
     # speed goes 0.3 → 0.8 m/s. LP-head: at full speed the head is pulled
     # (σ 0.5 rad) to neck −1.0 rad, head +0.5 rad from home: the pose of the
     # entries at 1.0–1.1 s (neck 55–72° forward, head 30–36° back, lean 58–81°).
-    # H: the sub-1 s entries run with the neck 81–89° down and the head in line
-    # (−5° to −12°); the target moves there: neck −1.45 rad, head 0.
     cfg.rewards["head_pose_tracking"] = RewardTermCfg(
         func=sprint_rewards.head_pose_tracking_at_speed,
         weight=2.0,
         params={"command_name": "head_pose", "std": 0.5, "fast_std": 0.5,
-                "fast_offset": (-1.45, 0.0, 0.0, 0.0), "speed_lo": 0.3, "speed_hi": 0.8},
+                "fast_offset": (-1.0, 0.5, 0.0, 0.0), "speed_lo": 0.3, "speed_hi": 0.8},
     )
     # body_pose: infra kept intact but DISABLED (weight 0) — the obs slot and
     # command stay alive for envs that raise the weight (standup).
