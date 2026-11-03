@@ -215,6 +215,24 @@ Doubts, before running: B2 showed the action-rate ramp was the main brake, so A 
 freeing a rocking tax can leave the gait unchanged, which W1/W2 may repeat; V does not bind until a run passes
 2.0 m/s steady (LX: 1.77).
 
+Seed 1 (seed-2 relaunches: H 7ae7036, W2 d9fe5c8, W1 88d4f89, each the tree of its seed-1 commit). Gait
+measured as above, on unseen seeds 6–10 at the best checkpoint's vx:
+
+| Run | Best | At 1999 | Neck / head from home | Head lean | Roll σ | Σ(Δa)² | Trunk pitch | Unseen 6–10 |
+|---|---|---|---|---|---|---|---|---|
+| LX s1 | 1.233 s @2900 | 1.34 s | −52° / +34° | 56° | 4.1° | 5.3 | 13.4° | 1.238 s |
+| H s1 | 1.225 s @2900 | 1.34 s | −65° / +6° | 58° | 4.6° | 5.2 | 13.6° | 1.250 s |
+| A s1 | 1.332 s @2900 | 1.35 s | −56° / +32° | 64° | 5.0° | 12.5 | 17.9° | 1.355 s |
+| W1 s1 | 1.230 s @2800 | 1.31 s | −44° / +33° | 47° | 5.1° | 4.5 | 11.7° | 1.265 s |
+| W2 s1 | **1.214 s** @2700 | 1.26 s | −53° / +34° | 57° | 5.0° | 5.1 | 12.5° | 1.230 s |
+
+- **A**: the targets switch 2.3× harder, as asked, and the run is 0.10 s slower from 1100 on: sharper switching
+  alone is not the sub-1 s entries' speed.
+- **H**: the neck goes 13° further down and the head comes level, but the head lean barely moves (the head
+  in line undoes the neck), and the score is within seed noise.
+- **W1, W2**: neither rocks (roll σ 5° against the fast entries' 15–33°): as in B3, freeing the tax leaves
+  the gait as it was. W2 led LX at most checkpoints from 1300 on; seed 2 decides whether that is noise.
+
 ### Waiting: M1/M2, on hold
 | ID | Change | Hypothesis |
 |---|---|---|
