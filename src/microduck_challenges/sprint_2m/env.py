@@ -342,12 +342,10 @@ def make_env_cfg(
     # bell curve around the command (std² 0.1): a robot 0.6 m/s short of a
     # 1.2 m/s command earns ~0 and feels no pull to go faster. lane_progress
     # pays linearly for speed down the lane up to v_ref, whatever the command.
-    # V: v_ref 2.0 → 3.0 m/s, weight 10 → 15 (the same pay per m/s): the sub-1 s
-    # entries run 2.1–2.3 m/s steady, where v_ref 2.0 paid nothing more.
     cfg.rewards["lane_progress"] = RewardTermCfg(
         func=sprint_rewards.lane_progress,
-        weight=15.0,  # E3: 5 → 10, a stronger pull for speed once the caps are gone; V: 15
-        params={"v_ref": 3.0, "command_name": "twist", "command_threshold": 0.01},
+        weight=10.0,  # E3: 5 → 10, a stronger pull for speed once the caps are gone
+        params={"v_ref": 2.0, "command_name": "twist", "command_threshold": 0.01},
     )
 
     # Action smoothness: stage-0 value; the action_rate_weight curriculum below
@@ -711,11 +709,13 @@ def make_env_cfg(
     # speed goes 0.3 → 0.8 m/s. LP-head: at full speed the head is pulled
     # (σ 0.5 rad) to neck −1.0 rad, head +0.5 rad from home: the pose of the
     # entries at 1.0–1.1 s (neck 55–72° forward, head 30–36° back, lean 58–81°).
+    # H: the sub-1 s entries run with the neck 81–89° down and the head in line
+    # (−5° to −12°); the target moves there: neck −1.45 rad, head 0.
     cfg.rewards["head_pose_tracking"] = RewardTermCfg(
         func=sprint_rewards.head_pose_tracking_at_speed,
         weight=2.0,
         params={"command_name": "head_pose", "std": 0.5, "fast_std": 0.5,
-                "fast_offset": (-1.0, 0.5, 0.0, 0.0), "speed_lo": 0.3, "speed_hi": 0.8},
+                "fast_offset": (-1.45, 0.0, 0.0, 0.0), "speed_lo": 0.3, "speed_hi": 0.8},
     )
     # body_pose: infra kept intact but DISABLED (weight 0) — the obs slot and
     # command stay alive for envs that raise the weight (standup).
