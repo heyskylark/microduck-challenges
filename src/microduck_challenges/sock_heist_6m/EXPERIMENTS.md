@@ -19,7 +19,8 @@ Bars on this machine: the walker 24.159 s at 1.00 m/s 5/5; heist5-300 (the shipp
 |---|---|---|---|---|---|---|
 | long | 14d5327 | 2000 iterations, `action_rate_l2` ramp capped at −0.3 | 2000 | 1500 | 10.244 s 5/5 @1.20 | 25/25, mean 9.95 s, worst drift 1.3 cm, 1.08–1.13 m/s on green |
 | uncap | 68796c3 | `progress` past the command, up to 2.0 m/s | 2000 | 1800 | 8.677 s 5/5 @1.20 | 25/25, mean 8.66 s, worst drift 1.2 cm, 1.24–1.33 m/s on green |
-| onesided | | `track_linear_velocity` one-sided forward on green | 2000 | | | |
+| onesided | 74974ac | `track_linear_velocity` one-sided forward on green | 2000 | 1900 | 8.516 s 5/5 @1.20 | 25/25, mean 8.46 s, worst drift 1.2 cm, 1.27–1.35 m/s on green |
+| brake | | Stillness paid on the turn's last 0.1 s | 2000 | | | |
 
 ### base
 
@@ -65,6 +66,25 @@ Every checkpoint from 100 finishes 5/5 (scored at 0.85–1.20 m/s). −1.57 s on
 past its command (1.24–1.33 m/s on green of 1.20) and still stops cleanly: 0 caught, 0 fell, worst drift
 1.2 cm. The bell curve of `track_linear_velocity` still charges it for that excess.
 
+### onesided — kept
+
+Hypothesis: uncap ran 1.24–1.33 m/s on a 1.20 command, where the two-sided bell curve of
+`track_linear_velocity` charges for the excess; making it one-sided on green (red still tracks 0 both
+ways) lets it walk faster.
+
+| Checkpoint | 100 | 300 | 500 | 700 | 900 | 1100 | 1300 | 1500 | 1700 | 1800 | 1900 | 1999 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Score (s) | 24.05 | 16.94 | 14.11 | 12.33 | 10.34 | 9.57 | 9.38 | 8.65 | 8.52 | 8.56 | **8.52** | 8.56 |
+
+Every checkpoint from 100 finishes 5/5 (scored at 0.75–1.20 m/s). −0.16 s on uncap's best, one seed: small,
+but the late checkpoints are steadier (1700–1999 all 8.52–8.56 s; uncap's 8.68–9.19 s).
+
+How it stops (`logs/stopping.py`-style trace over seeds 1–10 at 1.20 m/s, 20 reds): 1.34 m/s as the red
+begins, it coasts ~29 cm (up to 37 cm) into the turn and reaches the mark still moving on 18 of 20 reds
+(0.22 m/s on average over the last 0.1 s, up to 0.50); it then stops within a few watched steps, worst
+drift 0.9 cm. uncap-1800 reached it moving on 10 of 20. Nothing in training pays the coast (`progress` is
+zero on red); it is free distance on the Arena, but the margin at the mark thins as green speed rises.
+
 ## Next
 
 Four runs in order, 2000 iterations each, each on top of the best so far:
@@ -74,4 +94,4 @@ Four runs in order, 2000 iterations each, each on top of the best so far:
 | long | 2000 iterations, `action_rate_l2` ramp capped at −0.3 by 750 | B2 |
 | uncap | `progress` pays forward speed past the command on green, up to 2.0 m/s | A2 / E3 |
 | onesided | `track_linear_velocity` one-sided on green: faster than the command costs nothing | D1 |
-| brake | A stopping reward through the head's 0.4 s turn, which nothing pays today | new |
+| brake | `brake` (weight 4): exp(−(speed / 0.1 m/s)²) on the turn's last 5 steps, the mark the last; the coast before them stays free | new |
