@@ -14,10 +14,11 @@ def freeze(env, command_name: str, std: float) -> torch.Tensor:
     return torch.where(watch, torch.exp(-((term.drift() / std) ** 2)), 0.0)
 
 
-def progress(env, command_name: str) -> torch.Tensor:
-    """Forward speed, up to the command: pays walking on green and nothing on red (the command is zero)."""
-    vx = env.scene["robot"].data.root_link_lin_vel_b[:, 0].clamp(min=0.0)
-    return torch.minimum(vx, env.command_manager.get_command(command_name)[:, 0])
+def progress(env, command_name: str, v_ref: float) -> torch.Tensor:
+    """Forward speed up to `v_ref` on green, past the command (the sprint's lane_progress, A2/E3): the
+    command no longer caps it. Nothing on red (the command is zero)."""
+    vx = env.scene["robot"].data.root_link_lin_vel_b[:, 0].clamp(0.0, v_ref)
+    return vx * (env.command_manager.get_command(command_name)[:, 0] > 0.0)
 
 
 def caught(env, command_name: str) -> torch.Tensor:

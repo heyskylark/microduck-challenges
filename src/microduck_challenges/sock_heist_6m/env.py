@@ -306,12 +306,15 @@ def make_env_cfg(
         params={"command_name": "twist", "std": lights.TOLERANCE_M},
     )
 
-    # Forward speed up to the command. Measured under the lights, a statue earned
+    # Forward speed, past the command up to 2.0 m/s on green (EXPERIMENTS.md,
+    # uncap; was up to the command). Measured under the lights, a statue earned
     # 8.92 a step, the warm-start walker 7.91 and one that walks on green and
     # freezes on red 8.29: the walker reaches ~0.45 of its command, which
-    # track_linear_velocity barely pays over a statue.
+    # track_linear_velocity barely pays over a statue. base and long scored best
+    # at the sweep's top, 1.20 m/s, walking ~1.1 m/s: the cap was the limit.
     cfg.rewards["progress"] = RewardTermCfg(
-        func=rewards.progress, weight=knobs["progress_reward"], params={"command_name": "twist"}
+        func=rewards.progress, weight=knobs["progress_reward"],
+        params={"command_name": "twist", "v_ref": 2.0},
     )
 
     # Action smoothness: stage-0 value; the action_rate_weight curriculum below

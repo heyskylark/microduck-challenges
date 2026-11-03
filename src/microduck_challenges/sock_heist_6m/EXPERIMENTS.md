@@ -17,7 +17,8 @@ Bars on this machine: the walker 24.159 s at 1.00 m/s 5/5; heist5-300 (the shipp
 
 | Run | Commit | Change | Iterations | Best | Score | CHECK 25 seeds at the best |
 |---|---|---|---|---|---|---|
-| base | 0633566 | The recipe as shipped (heist5's) | 1000 | 999 | 10.532 s 5/5 @1.20 | 25/25, mean 10.68 s, worst drift 1.4 cm, 1.02–1.07 m/s on green |
+| long | 14d5327 | 2000 iterations, `action_rate_l2` ramp capped at −0.3 | 2000 | 1500 | 10.244 s 5/5 @1.20 | 25/25, mean 9.95 s, worst drift 1.3 cm, 1.08–1.13 m/s on green |
+| uncap | | `progress` past the command, up to 2.0 m/s | 2000 | | | |
 
 ### base
 
@@ -37,6 +38,18 @@ Every checkpoint from 100 finishes 5/5. Curves: `caught` peaked near 4.4 per ste
 - **Still improving at 999** (−0.75 s per 100 iterations): 1000 iterations is too short.
 - The smoothness ramp reaches −0.4 at 750 and −1.0 by 1500 as shipped: the sprint's B2 found it the main
   brake once speed was paid for.
+
+### long — kept
+
+Hypothesis: base was still improving at 999; twice the iterations, with the smoothness ramp capped at
+−0.3 so it does not brake the longer run, gives a faster best checkpoint.
+
+| Checkpoint | 100 | 300 | 500 | 700 | 900 | 1100 | 1300 | 1500 | 1700 | 1900 | 1999 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Score (s) | 25.01 | 16.75 | 15.09 | 12.35 | 11.84 | 10.53 | 10.39 | **10.24** | 10.38 | 10.34 | 10.42 |
+
+Every checkpoint from 100 finishes 5/5, scored at 1.15–1.20 m/s. −0.29 s on base's best; it plateaus at
+10.2–10.5 s from 1100 on, walking 1.08–1.13 m/s on green of a 1.20 command: the command caps it.
 
 ## Next
 
