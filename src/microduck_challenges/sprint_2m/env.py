@@ -342,12 +342,10 @@ def make_env_cfg(
     # bell curve around the command (std² 0.1): a robot 0.6 m/s short of a
     # 1.2 m/s command earns ~0 and feels no pull to go faster. lane_progress
     # pays linearly for speed down the lane up to v_ref, whatever the command.
-    # V: v_ref 2.0 → 3.0 m/s, weight 10 → 15 (the same pay per m/s): the sub-1 s
-    # entries run 2.1–2.3 m/s steady, where v_ref 2.0 paid nothing more.
     cfg.rewards["lane_progress"] = RewardTermCfg(
         func=sprint_rewards.lane_progress,
-        weight=15.0,  # E3: 5 → 10, a stronger pull for speed once the caps are gone; V: 15
-        params={"v_ref": 3.0, "command_name": "twist", "command_threshold": 0.01},
+        weight=10.0,  # E3: 5 → 10, a stronger pull for speed once the caps are gone
+        params={"v_ref": 2.0, "command_name": "twist", "command_threshold": 0.01},
     )
 
     # Action smoothness: stage-0 value; the action_rate_weight curriculum below
@@ -758,14 +756,14 @@ def make_env_cfg(
     # action_rate weight ramp: gentle smoothing while the gait bootstraps, then
     # capped at -0.3 (EXPERIMENTS.md, B2; was -1.0 by iter 1500): in A1 and A2
     # the Arena score was best at 700-1000 and worsened as this ramp tightened.
+    # A: held at -0.1 for the whole run. The sub-1 s entries switch their
+    # targets 4-5x harder (sum of squared action change 17-25 per step, ours 5).
     cfg.curriculum["action_rate_weight"] = CurriculumTermCfg(
         func=microduck_mdp.reward_weight,
         params={
             "reward_name": "action_rate_l2",
             "weight_stages": [
                 {"step": 0, "weight": -0.1},
-                {"step": 500 * NUM_STEPS_PER_ENV, "weight": -0.2},
-                {"step": 750 * NUM_STEPS_PER_ENV, "weight": -0.3},
             ],
         },
     )
