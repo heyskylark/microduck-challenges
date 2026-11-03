@@ -291,9 +291,12 @@ def make_env_cfg(
     # Velocity tracking rewards. track_linear_velocity pays progress on green at
     # the commanded speed, and stillness on red (a zero command): at 0.45 m/s
     # standing earns 13 % of walking (the tug's t4/t5 never walked at 41 %).
+    # One-sided forward on green (EXPERIMENTS.md, onesided; the sprint's D1):
+    # uncap ran 1.24–1.33 m/s on a 1.20 command, where the bell curve charges.
     # The lane's hold steers through the yaw rate, so tracking it is the steering.
+    cfg.rewards["track_linear_velocity"].func = rewards.track_linear_velocity_at_least
+    cfg.rewards["track_linear_velocity"].params = {"command_name": "twist", "std": math.sqrt(0.1)}
     cfg.rewards["track_linear_velocity"].weight = knobs["forward_reward"]
-    cfg.rewards["track_linear_velocity"].params["std"] = math.sqrt(0.1)
     cfg.rewards["track_angular_velocity"].weight = 2.0
     cfg.rewards["track_angular_velocity"].params["std"] = math.sqrt(0.5)
 

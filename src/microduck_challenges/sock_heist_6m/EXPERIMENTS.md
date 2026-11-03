@@ -18,7 +18,8 @@ Bars on this machine: the walker 24.159 s at 1.00 m/s 5/5; heist5-300 (the shipp
 | Run | Commit | Change | Iterations | Best | Score | CHECK 25 seeds at the best |
 |---|---|---|---|---|---|---|
 | long | 14d5327 | 2000 iterations, `action_rate_l2` ramp capped at −0.3 | 2000 | 1500 | 10.244 s 5/5 @1.20 | 25/25, mean 9.95 s, worst drift 1.3 cm, 1.08–1.13 m/s on green |
-| uncap | | `progress` past the command, up to 2.0 m/s | 2000 | | | |
+| uncap | 68796c3 | `progress` past the command, up to 2.0 m/s | 2000 | 1800 | 8.677 s 5/5 @1.20 | 25/25, mean 8.66 s, worst drift 1.2 cm, 1.24–1.33 m/s on green |
+| onesided | | `track_linear_velocity` one-sided forward on green | 2000 | | | |
 
 ### base
 
@@ -50,6 +51,19 @@ Hypothesis: base was still improving at 999; twice the iterations, with the smoo
 
 Every checkpoint from 100 finishes 5/5, scored at 1.15–1.20 m/s. −0.29 s on base's best; it plateaus at
 10.2–10.5 s from 1100 on, walking 1.08–1.13 m/s on green of a 1.20 command: the command caps it.
+
+### uncap — kept
+
+Hypothesis: long walked 1.1 m/s of a 1.20 command because `progress` paid nothing past the command;
+paying forward speed up to 2.0 m/s on green, whatever the command, makes it walk faster.
+
+| Checkpoint | 100 | 300 | 500 | 700 | 900 | 1100 | 1300 | 1500 | 1700 | 1800 | 1900 | 1999 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Score (s) | 21.89 | 16.06 | 15.08 | 12.17 | 9.70 | 9.43 | 9.38 | 9.14 | 9.25 | **8.68** | 8.77 | 9.19 |
+
+Every checkpoint from 100 finishes 5/5 (scored at 0.85–1.20 m/s). −1.57 s on long's best. It now walks
+past its command (1.24–1.33 m/s on green of 1.20) and still stops cleanly: 0 caught, 0 fell, worst drift
+1.2 cm. The bell curve of `track_linear_velocity` still charges it for that excess.
 
 ## Next
 

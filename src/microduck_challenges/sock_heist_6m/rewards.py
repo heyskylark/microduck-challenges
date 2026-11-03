@@ -21,6 +21,19 @@ def progress(env, command_name: str, v_ref: float) -> torch.Tensor:
     return vx * (env.command_manager.get_command(command_name)[:, 0] > 0.0)
 
 
+def track_linear_velocity_at_least(env, command_name: str, std: float) -> torch.Tensor:
+    """mjlab's track_linear_velocity, one-sided forward on green (the sprint's D1): falling short of the
+    command costs as the bell curve always did, going faster costs nothing. On red (a zero command) it
+    still tracks v_x = 0 both ways: that is what teaches the stop.
+    exp(-(e_x² + (cmd_y - v_y)² + v_z²) / std²)."""
+    command = env.command_manager.get_command(command_name)
+    v = env.scene["robot"].data.root_link_lin_vel_b
+    short = command[:, 0] - v[:, 0]
+    err_x = torch.where(command[:, 0] > 0.0, short.clamp(min=0.0), short)
+    err = err_x.square() + (command[:, 1] - v[:, 1]).square() + v[:, 2].square()
+    return torch.exp(-err / std**2)
+
+
 def caught(env, command_name: str) -> torch.Tensor:
     """(n,) bool: watched, and more than TOLERANCE_M from its mark, as run_once catches a duck."""
     term = env.command_manager.get_term(command_name)
