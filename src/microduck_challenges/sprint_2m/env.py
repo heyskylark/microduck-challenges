@@ -259,12 +259,9 @@ def make_env_cfg(
     # Roll and backward lean keep std² 0.05. LP-trunk: at speed the trunk is
     # also pulled forward to a 12° lean (std² 0.05 short of it): freeing the
     # lean (L-T) left the trunk at 0–3°; the faster entries run at 12–18°.
-    # W1: roll's std² also widens, 0.05 → 0.5, with speed: the sub-1 s entries
-    # rock the trunk 15–33° (σ) once per stride; ours rocks 4°.
     cfg.rewards["upright"].func = sprint_rewards.upright_lean
     cfg.rewards["upright"].params.update(
-        {"lean_std": 1.0, "speed_lo": 0.3, "speed_hi": 0.8, "lean_target_deg": 12.0,
-         "roll_std": math.sqrt(0.5)}
+        {"lean_std": 1.0, "speed_lo": 0.3, "speed_hi": 0.8, "lean_target_deg": 12.0}
     )
 
     # Foot-specific configurations. In mjlab 1.3.0 foot_swing_height is fully
@@ -345,10 +342,12 @@ def make_env_cfg(
     # bell curve around the command (std² 0.1): a robot 0.6 m/s short of a
     # 1.2 m/s command earns ~0 and feels no pull to go faster. lane_progress
     # pays linearly for speed down the lane up to v_ref, whatever the command.
+    # V: v_ref 2.0 → 3.0 m/s, weight 10 → 15 (the same pay per m/s): the sub-1 s
+    # entries run 2.1–2.3 m/s steady, where v_ref 2.0 paid nothing more.
     cfg.rewards["lane_progress"] = RewardTermCfg(
         func=sprint_rewards.lane_progress,
-        weight=10.0,  # E3: 5 → 10, a stronger pull for speed once the caps are gone
-        params={"v_ref": 2.0, "command_name": "twist", "command_threshold": 0.01},
+        weight=15.0,  # E3: 5 → 10, a stronger pull for speed once the caps are gone; V: 15
+        params={"v_ref": 3.0, "command_name": "twist", "command_threshold": 0.01},
     )
 
     # Action smoothness: stage-0 value; the action_rate_weight curriculum below
