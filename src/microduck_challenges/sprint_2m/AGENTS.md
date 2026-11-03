@@ -247,6 +247,12 @@ fork, never `pollen-robotics`; the workshop's home sets that up).
   seeds). A `lane_wall` termination also does, at about 0.1 s.
 - **Keep the velocity pushes**: the Arena has none, but training without them made 9 of 20 checkpoints
   fall there. Standing envs above 2% waste training (the Arena never commands 0).
+- **The fastest entries' gait is not unlocked by pricing it less.** They run with the neck 80–90° down, the
+  trunk rocking 15–33° (σ) once per stride and leg targets switching 4–5× harder (EXPERIMENTS.md, gait batch,
+  `logs/analysis/gait.py`). Freeing the rocking (`upright` roll std² 0.5 at speed, `body_ang_vel` −0.01) or the
+  head target (neck −1.45 rad) keeps roll at ~5° and gains ≤ 0.025 s; holding `action_rate_l2` at −0.1 doubles
+  the switching and is 0.04–0.09 s slower. `body_ang_vel` −0.01 (−0.02 s on both seeds) is in the recipe. The
+  servos are current-limited ~75% of the time in every fast gait: there is no torque left to free.
 
 ## The competition
 

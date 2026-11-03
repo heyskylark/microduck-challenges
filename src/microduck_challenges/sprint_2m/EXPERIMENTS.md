@@ -11,9 +11,10 @@ together.
 
 ## Outcome
 
-**4.800 s → 1.233 s, 5/5** locally (run0 → LX-both3000-s1, checkpoint 2900). Published: K2 1999, **1.412 s** on the
-Space. The folder now holds LP-both's recipe (`env.py`, `rewards.py`) with a 3000-iteration `[recipe]` in
-`challenge.toml`: K2's, plus the running head pulled forward and the trunk pulled to a 12° lean.
+**4.800 s → 1.214 s, 5/5** locally (run0 → W2-angvel001-s1, checkpoint 2700). Published: K2 1999, **1.412 s** on the
+Space; the user entered LX s1 2900 (1.233 s on the Space). The folder now holds W2's recipe (`env.py`, `rewards.py`)
+with a 3000-iteration `[recipe]` in `challenge.toml`: LX's (K2's, plus the running head pulled forward and the
+trunk pulled to a 12° lean), with `body_ang_vel` −0.05 → −0.01.
 
 What the recipe changes against the folder as cloned, all kept by the runs below:
 
@@ -27,18 +28,21 @@ What the recipe changes against the folder as cloned, all kept by the runs below
 | Standing envs held at 2% (was ramped to 25%) | `env.py` curriculum | G3 | −0.05 s |
 | Mirror-symmetry loss (`ENABLE_SYMMETRY`) | `env.py` | I2 | late checkpoints off the wall |
 | `lane_drift` = 2 · exp(−v_across² / 0.15²) | `rewards.py`, `env.py` | I3 | late checkpoints off the wall |
+| `body_ang_vel` −0.05 → −0.01 | `env.py` | W2 | −0.02 s on both seeds |
 
 Checkpoints to choose from (all local, indicative):
 
 | Checkpoint | Score | Sweep | End y of the trace seed | Neighbours |
 |---|---|---|---|---|
-| **LX-both3000-s1 2900** (`2026-11-01_03-41-59_LX-both3000-s1`) | 1.233 s @1.10 | 1.21–1.41 s at all 21 vx | +0.08 m | every checkpoint from 200 is 5/5 |
+| W2-angvel001-s1 2700 (`2026-11-02_12-52-55_W2-angvel001-s1`) | 1.214 s @0.85 | 1.21–1.35 s at all 21 vx | **−0.31 m** | 28 of 29 from 200 are 5/5; 2400–2999 end at −0.16 to −0.31 m |
+| W2-angvel001-s2 2900 (`2026-11-02_19-00-34_W2-angvel001-s2`) | 1.238 s @1.10 | — | −0.04 m | every checkpoint from 200 is 5/5 |
+| **LX-both3000-s1 2900** (`2026-11-01_03-41-59_LX-both3000-s1`), entered | 1.233 s @1.10 | 1.21–1.41 s at all 21 vx | +0.08 m | every checkpoint from 200 is 5/5 |
 | LX-both3000-s2 2900 (`2026-11-01_03-42-05_LX-both3000-s2`) | 1.263 s @0.55 | 1.24–1.32 s at all 21 vx | −0.01 m | every checkpoint from 200 is 5/5 |
 | LP-both-s1 1999 (`2026-10-31_18-01-53_LP-both-s1`) | 1.334 s @0.75 | 1.31–1.41 s at all 21 vx | −0.27 m | every checkpoint from 200 is 5/5 |
 | K2 1999 (`2026-10-30_20-27-50_K2-mirror-drift-s2`), published | 1.412 s @1.20 | 1.40–1.51 s at all 21 vx | −0.08 m | every checkpoint from 200 is 5/5 |
 
 Simulations on another CPU drift apart after a few seconds; both LX 2900 checkpoints end within 0.08 m of
-centre (0.32 m of margin to a wall).
+centre (0.32 m of margin to a wall). W2 s1 2700 is faster but ends 0.09 m from the right wall: riskier on the Space.
 
 What was learned (details per run below):
 - The original ceiling was the reward's shape, not the robot: speed tracking is a bell curve around the
@@ -50,8 +54,11 @@ What was learned (details per run below):
   not have (trace analysis, G batch). A tighter heading tolerance does not fix it (I1); the mirror loss
   and `lane_drift` do; a wall termination does too, at a cost of ~0.1 s (J batch).
 - Fall penalties, γ 0.995 and progress weight 20 did not help (F1, F2, G1).
+- The sub-1 s entries' gait (neck 80–90° down, the trunk rocking 15–33° per stride, targets switching 4–5×
+  harder) is not reached by pricing it less: freeing the rocking (W1, W2) or the switching (A), or moving
+  the head target (H), leaves roll at ~5° and gains ≤ 0.025 s; more switching alone is 0.04–0.09 s slower.
 
-## Next: the gait batch (running) and what waits
+## Next: what waits
 
 ### Head and trunk lean: what the faster entries do
 Measured in the Arena's own race (trace forward kinematics, steady running, the first quarter skipped). Head lean
@@ -215,23 +222,45 @@ Doubts, before running: B2 showed the action-rate ramp was the main brake, so A 
 freeing a rocking tax can leave the gait unchanged, which W1/W2 may repeat; V does not bind until a run passes
 2.0 m/s steady (LX: 1.77).
 
-Seed 1 (seed-2 relaunches: H 7ae7036, W2 d9fe5c8, W1 88d4f89, each the tree of its seed-1 commit). Gait
-measured as above, on unseen seeds 6–10 at the best checkpoint's vx:
+Seed-2 relaunches: H 7ae7036, W2 d9fe5c8, W1 88d4f89, V ff20c8b, A 6247512, each the tree of its seed-1 commit.
+Gait measured as above, on unseen seeds 6–10 at the best checkpoint's vx:
 
-| Run | Best | At 1999 | Neck / head from home | Head lean | Roll σ | Σ(Δa)² | Trunk pitch | Unseen 6–10 |
-|---|---|---|---|---|---|---|---|---|
-| LX s1 | 1.233 s @2900 | 1.34 s | −52° / +34° | 56° | 4.1° | 5.3 | 13.4° | 1.238 s |
-| H s1 | 1.225 s @2900 | 1.34 s | −65° / +6° | 58° | 4.6° | 5.2 | 13.6° | 1.250 s |
-| A s1 | 1.332 s @2900 | 1.35 s | −56° / +32° | 64° | 5.0° | 12.5 | 17.9° | 1.355 s |
-| W1 s1 | 1.230 s @2800 | 1.31 s | −44° / +33° | 47° | 5.1° | 4.5 | 11.7° | 1.265 s |
-| W2 s1 | **1.214 s** @2700 | 1.26 s | −53° / +34° | 57° | 5.0° | 5.1 | 12.5° | 1.230 s |
+| Run | Best | At 1999 | 5/5 from 200 | Neck / head from home | Head lean | Roll σ | Σ(Δa)² | Trunk pitch | Unseen 6–10 |
+|---|---|---|---|---|---|---|---|---|---|
+| LX s1 | 1.233 s @2900 | 1.34 s | 29/29 | −52° / +34° | 56° | 4.1° | 5.3 | 13.4° | 1.238 s |
+| LX s2 | 1.263 s @2900 | 1.34 s | 29/29 | −47° / +31° | 50° | 4.3° | 4.8 | 13.1° | 1.264 s |
+| H s1 | 1.225 s @2900 | 1.34 s | 29/29 | −65° / +6° | 58° | 4.6° | 5.2 | 13.6° | 1.250 s |
+| H s2 | 1.255 s @2900 | 1.33 s | 29/29 | −68° / +5° | 60° | 4.6° | 5.1 | 13.4° | 1.279 s |
+| A s1 | 1.326 s @2999 | 1.35 s | 28/29 | −56° / +32° | 64° | 5.0° | 12.5 | 17.9° | 1.355 s |
+| A s2 | 1.306 s @2700 | 1.41 s | 27/29 | −64° / +35° | 76° | 6.9° | 12.6 | 19.0° | 1.328 s |
+| W1 s1 | 1.227 s @2999 | 1.31 s | 29/29 | −44° / +33° | 47° | 5.1° | 4.5 | 11.7° | 1.265 s |
+| W1 s2 | 1.243 s @2800 | 1.32 s | 28/29 | −50° / +34° | 56° | 5.4° | 5.1 | 14.0° | 1.233 s |
+| **W2 s1** | **1.214 s** @2700 | 1.26 s | 28/29 | −53° / +34° | 57° | 5.0° | 5.1 | 12.5° | 1.230 s |
+| W2 s2 | 1.238 s @2900 | 1.30 s | 29/29 | −48° / +32° | 49° | 5.5° | 4.3 | 10.4° | 1.254 s |
+| V s1 | 1.222 s @2800 | 1.32 s | 28/29 | −46° / +31° | 46° | 4.7° | 4.7 | 10.4° | 1.232 s |
+| V s2 | 1.258 s @2999 | 1.34 s | 29/29 | −42° / +32° | 44° | 4.8° | 4.6 | 11.2° | 1.266 s |
 
-- **A**: the targets switch 2.3× harder, as asked, and the run is 0.10 s slower from 1100 on: sharper switching
-  alone is not the sub-1 s entries' speed.
-- **H**: the neck goes 13° further down and the head comes level, but the head lean barely moves (the head
-  in line undoes the neck), and the score is within seed noise.
-- **W1, W2**: neither rocks (roll σ 5° against the fast entries' 15–33°): as in B3, freeing the tax leaves
-  the gait as it was. W2 led LX at most checkpoints from 1300 on; seed 2 decides whether that is noise.
+| Change | Mean of the two seeds | vs LX (1.248 s) |
+|---|---|---|
+| **W2** `body_ang_vel` −0.01 | **1.226 s** | −0.019 / −0.025: **kept** |
+| W1 roll std² 0.5 at speed | 1.235 s | −0.006 / −0.020 |
+| H neck −1.45, head 0 | 1.240 s | −0.008 / −0.008 |
+| V v_ref 3.0, weight 15 | 1.240 s | −0.011 / −0.005 |
+| A action rate held at −0.1 | 1.316 s | +0.093 / +0.043: refuted |
+
+- **None of the four makes the fast entries' gait.** Roll σ stays 4.6–5.5° (fast entries 15–33°), switching
+  stays at Σ(Δa)² 4–5, the head lean at 44–60°. All gains are ≤ 0.025 s, inside LX's seed spread (0.03 s), but
+  W2, W1, H and V are each ahead of LX on both seeds.
+- **A**: the targets switch 2.6× harder, as asked, and the trunk tips to 18–19°; 0.04–0.09 s slower on both
+  seeds. Sharper switching alone is not the sub-1 s entries' speed.
+- **H**: the neck goes 16–21° further down and the head comes level, but the head lean barely moves (the head
+  in line undoes the neck).
+- **W1, W2**: neither rocks: as in B3, freeing a rocking tax leaves the gait as it was. W2 is the most consistent
+  gain (−0.02 s on both seeds) and goes into the recipe.
+- **V** does not bind: no run reaches 2 m/s steady (unchanged gaits), so the cap was not yet in the way.
+- **Lane**: W2 s1's best (2700) ends its trace seed at y = −0.31 m (walls at ±0.4), with 2400–2999 at −0.16 to
+  −0.31: a fast drift right, as before K. W2 s2 stays within 0.12 m. Its sweep is 1.21–1.35 s at all 21 vx.
+- Next: the four small gains together (W2 + W1 + H + V), two seeds.
 
 ### Waiting: M1/M2, on hold
 | ID | Change | Hypothesis |
@@ -307,6 +336,16 @@ Doubts, written down before running:
 | LY-trunk18-s2 | 4a67c0d | same, seed 2 | 2800 | 1.285 s | 5/5 | 1.20 | +0.02 s vs LX-s2: refuted |
 | LY-headtight-s1 | 06cee95 | LX + running head target σ 0.5 → 0.3 rad | 2900 | 1.267 s | 5/5 | 0.60 | +0.03 s vs LX-s1; head 42–60° |
 | LY-headtight-s2 | 06cee95 | same, seed 2 | 2900 | 1.280 s | 5/5 | 1.20 | +0.02 s vs LX-s2: refuted |
+| H-neck145-s1 | 97a47d8 | LX + running head target neck −1.45, head 0 | 2900 | 1.225 s | 5/5 | 0.95 | −0.008 s vs LX-s1; neck −65°, head +6° |
+| H-neck145-s2 | 7ae7036 | same, seed 2 | 2900 | 1.255 s | 5/5 | 0.75 | −0.008 s vs LX-s2 |
+| A-rate01-s1 | bacd8a0 | LX + `action_rate_l2` held at −0.1 | 2999 | 1.326 s | 5/5 | 0.95 | +0.09 s vs LX-s1 |
+| A-rate01-s2 | 6247512 | same, seed 2 | 2700 | 1.306 s | 5/5 | 1.05 | +0.04 s vs LX-s2: refuted |
+| W1-roll05-s1 | a519324 | LX + `upright` roll std² 0.05 → 0.5 at speed | 2999 | 1.227 s | 5/5 | 1.20 | −0.006 s vs LX-s1; roll σ 5° |
+| W1-roll05-s2 | 88d4f89 | same, seed 2 | 2800 | 1.243 s | 5/5 | 1.20 | −0.020 s vs LX-s2 |
+| **W2-angvel001-s1** | 0b7f5c1 | LX + `body_ang_vel` −0.05 → −0.01 | 2700 | **1.214 s** | 5/5 | 0.85 | −0.019 s vs LX-s1; best of the log; ends y −0.31 m |
+| W2-angvel001-s2 | d9fe5c8 | same, seed 2 | 2900 | 1.238 s | 5/5 | 1.10 | −0.025 s vs LX-s2: kept |
+| V-vref3-s1 | c0287c8 | LX + `lane_progress` v_ref 3.0, weight 15 | 2800 | 1.222 s | 5/5 | 1.00 | −0.011 s vs LX-s1 |
+| V-vref3-s2 | ff20c8b | same, seed 2 | 2999 | 1.258 s | 5/5 | 0.90 | −0.005 s vs LX-s2 |
 
 Pollen reference: 4.883 s at 0.55 m/s.
 

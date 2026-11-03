@@ -299,7 +299,9 @@ def make_env_cfg(
     cfg.rewards["air_time"].params["threshold_min"] = 0.125
     cfg.rewards["air_time"].params["threshold_max"] = 0.300
 
-    cfg.rewards["body_ang_vel"].weight = -0.05
+    # W2: -0.05 → -0.01. The sub-1 s entries rock the trunk once per stride
+    # (roll/pitch rate² ≈ 50 against our 6): at -0.05 that costs ≈ 2.7/step.
+    cfg.rewards["body_ang_vel"].weight = -0.01
     cfg.rewards["angular_momentum"].weight = -0.02
 
     # Velocity tracking rewards. Forward speed is tracked one-sided while
@@ -756,14 +758,14 @@ def make_env_cfg(
     # action_rate weight ramp: gentle smoothing while the gait bootstraps, then
     # capped at -0.3 (EXPERIMENTS.md, B2; was -1.0 by iter 1500): in A1 and A2
     # the Arena score was best at 700-1000 and worsened as this ramp tightened.
-    # A: held at -0.1 for the whole run. The sub-1 s entries switch their
-    # targets 4-5x harder (sum of squared action change 17-25 per step, ours 5).
     cfg.curriculum["action_rate_weight"] = CurriculumTermCfg(
         func=microduck_mdp.reward_weight,
         params={
             "reward_name": "action_rate_l2",
             "weight_stages": [
                 {"step": 0, "weight": -0.1},
+                {"step": 500 * NUM_STEPS_PER_ENV, "weight": -0.2},
+                {"step": 750 * NUM_STEPS_PER_ENV, "weight": -0.3},
             ],
         },
     )
