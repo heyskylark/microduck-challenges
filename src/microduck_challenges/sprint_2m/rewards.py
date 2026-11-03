@@ -154,24 +154,26 @@ def upright_lean(
     speed_lo: float,
     speed_hi: float,
     lean_target_deg: float = 0.0,
+    roll_std: float | None = None,
     asset_cfg: SceneEntityCfg = _ROBOT,
 ) -> torch.Tensor:
     """`upright` whose tolerance for a FORWARD (nose-down) lean widens from `std` to `lean_std` with speed.
 
-    exp(-g_y² / std² - e_x² / σ²), g the projected gravity of the body (nose-down gives g_x > 0) and
+    exp(-g_y² / σ_y² - e_x² / σ²), g the projected gravity of the body (nose-down gives g_x > 0) and
     e_x = g_x - gate · sin(lean_target): σ² is `lean_std`² (blended in with speed) past the target, `std`²
     short of it. With no target, a backward lean keeps `std`; with one, the trunk is pulled forward to it
-    at speed.
+    at speed. σ_y² is `std`², blended to `roll_std`² with speed when given (a side-to-side rock at speed).
     """
     asset = env.scene[asset_cfg.name]
     quat = asset.data.body_link_quat_w[:, asset_cfg.body_ids, :].squeeze(1)
     g = quat_apply_inverse(quat, asset.data.gravity_vec_w.expand(quat.shape[0], 3))
     gate = speed_gate(env, speed_lo, speed_hi)
     var_fwd = std**2 + gate * (lean_std**2 - std**2)
+    var_roll = std**2 if roll_std is None else std**2 + gate * (roll_std**2 - std**2)
     e_x = g[:, 0] - gate * math.sin(math.radians(lean_target_deg))
     past = torch.clamp(e_x, min=0.0)
     short = torch.clamp(e_x, max=0.0)
-    return torch.exp(-(torch.square(g[:, 1]) + torch.square(short)) / std**2 - torch.square(past) / var_fwd)
+    return torch.exp(-torch.square(g[:, 1]) / var_roll - torch.square(short) / std**2 - torch.square(past) / var_fwd)
 
 
 def track_yaw_rate_loose_rock(
