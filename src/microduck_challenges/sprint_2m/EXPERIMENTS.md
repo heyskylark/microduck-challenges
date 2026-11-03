@@ -11,8 +11,9 @@ together.
 
 ## Outcome
 
-**4.800 s → 1.214 s, 5/5** locally (run0 → W2-angvel001-s1, checkpoint 2700). Published: K2 1999, **1.412 s** on the
-Space; the user entered LX s1 2900 (1.233 s on the Space). The folder now holds W2's recipe (`env.py`, `rewards.py`)
+**4.800 s → 1.214 s, 5/5** locally (run0 → W2-angvel001-s1, checkpoint 2700). Published: W2 s1 2700 as
+`heyskylark/microduck-sprint-w2` (`sprint-w2`), **1.214 s, 5/5 at 0.85 m/s on the Space** (its wall margin held there);
+before it K2 1999 (1.412 s) and LX s1 2900 (1.233 s). The folder now holds W2's recipe (`env.py`, `rewards.py`)
 with a 3000-iteration `[recipe]` in `challenge.toml`: LX's (K2's, plus the running head pulled forward and the
 trunk pulled to a 12° lean), with `body_ang_vel` −0.05 → −0.01.
 
