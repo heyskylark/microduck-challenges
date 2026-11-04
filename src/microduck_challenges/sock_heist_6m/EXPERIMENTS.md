@@ -17,6 +17,10 @@ iterations. The run name says the change.
 plus 2000 iterations with the smoothness ramp capped at −0.3 (long), `progress` paid past the command up to
 2.0 m/s (uncap) and forward tracking one-sided on green (onesided). brake was not kept.
 
+Published: onesided 1900 (`2026-11-03_14-33-50_onesided`, commit 74974ac) as
+`heyskylark/microduck-heist-onesided`, **8.516 s, 5/5 at 1.20 m/s on the Space**, the same as locally
+([result](https://huggingface.co/spaces/pollen-robotics/microduck-arena#/r/01M6JHG51C1X9X22YS0H0R)).
+
 Bars on this machine: the walker 24.159 s at 1.00 m/s 5/5; heist5-300 (the shipped reference)
 16.98 s at 1.20 m/s 5/5.
 
