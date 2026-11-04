@@ -309,16 +309,6 @@ def make_env_cfg(
         params={"command_name": "twist", "std": lights.TOLERANCE_M},
     )
 
-    # Be still as the mark is taken (EXPERIMENTS.md, brake): stillness pays on
-    # the turn's last 5 steps (0.1 s), the mark the last of them, std 0.1 m/s.
-    # onesided coasted ~29 cm into each turn and reached the mark still moving
-    # (0.22 m/s on average, up to 0.50); the coast stays free, it is distance.
-    cfg.rewards["brake"] = RewardTermCfg(
-        func=rewards.brake,
-        weight=4.0,
-        params={"command_name": "twist", "std": 0.1, "window": 5},
-    )
-
     # Forward speed, past the command up to 2.0 m/s on green (EXPERIMENTS.md,
     # uncap; was up to the command). Measured under the lights, a statue earned
     # 8.92 a step, the warm-start walker 7.91 and one that walks on green and

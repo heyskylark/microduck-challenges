@@ -14,19 +14,6 @@ def freeze(env, command_name: str, std: float) -> torch.Tensor:
     return torch.where(watch, torch.exp(-((term.drift() / std) ** 2)), 0.0)
 
 
-def brake(env, command_name: str, std: float, window: int) -> torch.Tensor:
-    """(n,): exp(-(speed / std)²) on the last `window` steps of the head's turn, the mark the last of them,
-    else 0. `speed` is the trunk's across the floor. It pays being still as the mark is taken, not stopping
-    early: the coast through the rest of the turn is free distance on the Arena. uncap and onesided reached
-    their marks still moving (0.22 m/s on average, up to 0.50) and stopped within a few watched steps."""
-    term = env.command_manager.get_term(command_name)
-    k = env.episode_length_buf[:, None] - 1
-    mark = term.onset + term.turn
-    late = ((mark - window <= k) & (k < mark)).any(1)
-    speed = torch.linalg.vector_norm(env.scene["robot"].data.root_link_lin_vel_w[:, :2], dim=-1)
-    return torch.where(late, torch.exp(-((speed / std) ** 2)), 0.0)
-
-
 def progress(env, command_name: str, v_ref: float) -> torch.Tensor:
     """Forward speed up to `v_ref` on green, past the command (the sprint's lane_progress, A2/E3): the
     command no longer caps it. Nothing on red (the command is zero)."""

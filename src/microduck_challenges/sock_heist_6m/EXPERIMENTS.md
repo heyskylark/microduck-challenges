@@ -10,6 +10,13 @@ How runs work: one change per run, on top of the best run so far (a change is ke
 checkpoint beats the best so far). 4096 envs, seed 1, local RTX 3090, a checkpoint every 100
 iterations. The run name says the change.
 
+## Outcome
+
+**10.532 s → 8.516 s, 5/5** locally (base 999 → onesided 1900), against 24.159 s for the walker and
+16.98 s for the shipped reference on this machine. The folder holds onesided's recipe: the shipped one,
+plus 2000 iterations with the smoothness ramp capped at −0.3 (long), `progress` paid past the command up to
+2.0 m/s (uncap) and forward tracking one-sided on green (onesided). brake was not kept.
+
 Bars on this machine: the walker 24.159 s at 1.00 m/s 5/5; heist5-300 (the shipped reference)
 16.98 s at 1.20 m/s 5/5.
 
@@ -17,10 +24,11 @@ Bars on this machine: the walker 24.159 s at 1.00 m/s 5/5; heist5-300 (the shipp
 
 | Run | Commit | Change | Iterations | Best | Score | CHECK 25 seeds at the best |
 |---|---|---|---|---|---|---|
+| base | 0633566 | The recipe as shipped (heist5's) | 1000 | 999 | 10.532 s 5/5 @1.20 | 25/25, mean 10.68 s, worst drift 1.4 cm, 1.02–1.07 m/s on green |
 | long | 14d5327 | 2000 iterations, `action_rate_l2` ramp capped at −0.3 | 2000 | 1500 | 10.244 s 5/5 @1.20 | 25/25, mean 9.95 s, worst drift 1.3 cm, 1.08–1.13 m/s on green |
 | uncap | 68796c3 | `progress` past the command, up to 2.0 m/s | 2000 | 1800 | 8.677 s 5/5 @1.20 | 25/25, mean 8.66 s, worst drift 1.2 cm, 1.24–1.33 m/s on green |
 | onesided | 74974ac | `track_linear_velocity` one-sided forward on green | 2000 | 1900 | 8.516 s 5/5 @1.20 | 25/25, mean 8.46 s, worst drift 1.2 cm, 1.27–1.35 m/s on green |
-| brake | | Stillness paid on the turn's last 0.1 s | 2000 | | | |
+| brake | f9c0dd0 | Stillness paid on the turn's last 0.1 s | 2000 | 1800 | 8.591 s 5/5 @1.20 | 25/25, mean 8.49 s, worst drift 0.9 cm, 1.27–1.35 m/s on green |
 
 ### base
 
@@ -79,19 +87,41 @@ ways) lets it walk faster.
 Every checkpoint from 100 finishes 5/5 (scored at 0.75–1.20 m/s). −0.16 s on uncap's best, one seed: small,
 but the late checkpoints are steadier (1700–1999 all 8.52–8.56 s; uncap's 8.68–9.19 s).
 
-How it stops (`logs/stopping.py`-style trace over seeds 1–10 at 1.20 m/s, 20 reds): 1.34 m/s as the red
+How it stops (a trace of the Arena's `run_once` over seeds 1–10 at 1.20 m/s, 20 reds): 1.34 m/s as the red
 begins, it coasts ~29 cm (up to 37 cm) into the turn and reaches the mark still moving on 18 of 20 reds
 (0.22 m/s on average over the last 0.1 s, up to 0.50); it then stops within a few watched steps, worst
 drift 0.9 cm. uncap-1800 reached it moving on 10 of 20. Nothing in training pays the coast (`progress` is
 zero on red); it is free distance on the Arena, but the margin at the mark thins as green speed rises.
 
+### brake — not kept
+
+Hypothesis: onesided reaches its marks still moving; paying stillness on the turn's last 5 steps (0.1 s,
+the mark the last of them; `brake` = exp(−(speed / 0.1 m/s)²), weight 4) settles it at the mark, without
+paying an early stop: the coast before those steps is free distance.
+
+| Checkpoint | 100 | 300 | 500 | 700 | 900 | 1100 | 1300 | 1500 | 1700 | 1800 | 1900 | 1999 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Score (s) | 25.05 | 17.06 | 13.75 | 12.16 | 10.24 | 9.60 | 9.44 | 9.32 | 9.29 | **8.59** | 8.60 | 9.21 |
+
+Every checkpoint from 100 finishes 5/5. +0.075 s on onesided's best (CHECK mean +0.03 s): not kept, by the
+rule. It did what it was paid for, modestly. Stops over seeds 1–25 at 1.20 m/s, 50 reds each:
+
+| | onesided-1900 | brake-1800 |
+|---|---|---|
+| Speed as the red begins | 1.33 m/s | 1.32 m/s |
+| Coast into the turn, mean / max | 28.6 / 38.1 cm | 27.6 / 36.0 cm |
+| Speed over the last 0.1 s before the mark, mean / max | 0.212 / 0.573 m/s | 0.147 / 0.386 m/s |
+| Drift while watched, mean / worst | 0.45 / 1.16 cm | 0.56 / 0.92 cm |
+
+Neither comes near the 3 cm rule here; brake's value would be margin on the Space's physics, which drifts
+from this machine's. Its code is in f9c0dd0.
+
 ## Next
 
-Four runs in order, 2000 iterations each, each on top of the best so far:
-
-| Run | Change | Sprint source |
-|---|---|---|
-| long | 2000 iterations, `action_rate_l2` ramp capped at −0.3 by 750 | B2 |
-| uncap | `progress` pays forward speed past the command on green, up to 2.0 m/s | A2 / E3 |
-| onesided | `track_linear_velocity` one-sided on green: faster than the command costs nothing | D1 |
-| brake | `brake` (weight 4): exp(−(speed / 0.1 m/s)²) on the turn's last 5 steps, the mark the last; the coast before them stays free | new |
+- **Seeds**: every result above is one training seed, and onesided's lead over uncap (−0.16 s) and over
+  brake (−0.075 s) is within what a seed can move. A seed 2 of onesided (and of brake) says which holds.
+- **Faster on green**: onesided walks 1.27–1.35 m/s of a 2.0 m/s `progress` reference; the sprint's
+  fastest averaged ~1.65 m/s. The sprint's next levers: the mirror loss and `lane_drift` (I2/I3, against
+  the drift the fast gaits had; here `off_lane` stands for the wall), `body_ang_vel` −0.05 → −0.01 (W2),
+  and the head/trunk lean (LP), riskiest here: a forward lean is what falls on a stop.
+- **The coast**: ~28 cm a red is free distance only the Arena sees; nothing in training pays it.

@@ -75,17 +75,21 @@ walks on its command is all the challenge asks.
   fallen against the wall within ~1 s on the Arena (0/25), while `progress` paid it all the same.
 - **No `heading_hold`, no standing episodes**: the hold commands the yaw rate, and the reds stand
   about 45 % of every episode.
-- **1000 iterations, a checkpoint every 100**: warm-started Tug of War runs peaked early and fell
-  between 250-iteration checkpoints. Judge every checkpoint; keep the best, not the last.
+- **2000 iterations, a checkpoint every 100**: warm-started Tug of War runs peaked early and fell
+  between 250-iteration checkpoints. Judge every checkpoint; keep the best, not the last. (Was 1000:
+  `base` was still improving at 999; see `EXPERIMENTS.md`.)
+- **The smoothness ramp is capped at −0.3** (`action_rate_l2`, by iteration 750; was −1.0 by 1500),
+  the sprint's B2: past it the ramp brakes the walk.
 
 ## Files
 
 | File | What it holds | Change it? |
 |---|---|---|
 | `challenge.toml` `[params]` | The five knobs below | Yes, first. Keep each value within its `min`/`max` (the workshop refuses others) |
-| `challenge.toml` `[recipe]` | `num_envs` 4096, `max_iterations` 1000, `seed` 1 | Yes, when agreed with the user |
+| `challenge.toml` `[recipe]` | `num_envs` 4096, `max_iterations` 2000, `seed` 1 | Yes, when agreed with the user |
 | `env.py` | The whole environment: rewards, commands, domain randomization, curricula, terrain, `RL_CFG` (network, PPO, checkpoints every 100 iterations) | Yes, once the knobs are not enough |
-| `rewards.py` | `freeze`, `progress`, `caught`, and the critic's `light_state` and `lane_state` | Yes, to add a reward term (then add it to `cfg.rewards` in `env.py`) |
+| `rewards.py` | `freeze`, `progress`, `track_linear_velocity_at_least`, `caught`, and the critic's `light_state` and `lane_state` | Yes, to add a reward term (then add it to `cfg.rewards` in `env.py`) |
+| `EXPERIMENTS.md` | Every run of this folder: its hypothesis, commit and the evaluator's numbers | Yes, after each run |
 | `lights.py` | The event's numbers and the Arena's arithmetic, and `LightsCommand`, the twist | Only the command term; never the copies |
 | `walker.py`, `walker.onnx` | The learner's start | No |
 | `tasks.py`, `event`/`task`/`kind` in `challenge.toml` | Registration with mjlab and the Arena | No |
@@ -102,9 +106,9 @@ The reward terms as they start:
 
 | Term | Weight | Why |
 |---|---|---|
-| `track_linear_velocity` | `forward_reward` 2.0, std √0.1 | Progress on green at the commanded speed, and stillness on red (a zero command). At 0.45 m/s standing earns 13 % of walking; the Tug of War's t4/t5 never walked at 41 %. |
+| `track_linear_velocity` | `forward_reward` 2.0, std √0.1 | Progress on green at the commanded speed, and stillness on red (a zero command). One-sided on green (`track_linear_velocity_at_least`): falling short costs, going faster does not (onesided). At 0.45 m/s standing earns 13 % of walking; the Tug of War's t4/t5 never walked at 41 %. |
 | `track_angular_velocity` | 2.0, std √0.5 | The lane's hold steers through the yaw rate, so tracking it is the steering. |
-| `progress` | `progress_reward` 8.0 | Forward speed along the duck's own nose, up to the command, nothing on red. Without it a statue out-earned the walker under the lights (8.92 a step against 7.91): the walker reaches only ~0.45 of its command, which `track_linear_velocity` barely pays over standing, and heist1 and heist2 learned to creep. |
+| `progress` | `progress_reward` 8.0 | Forward speed along the duck's own nose on green, up to 2.0 m/s whatever the command (uncap; was up to the command), nothing on red. Without it a statue out-earned the walker under the lights (8.92 a step against 7.91): the walker reaches only ~0.45 of its command, which `track_linear_velocity` barely pays over standing, and heist1 and heist2 learned to creep. |
 | `freeze` | `freeze_reward` 2.0, std 0.03 m | The rule is 3 cm, and nothing else sees a few centimetres of creep: tracking's std is 0.32 m/s. |
 | `upright` | `upright_reward` 2.0, std √0.05 | The sprint's. A forward lean is what ends in a fall on a stop. |
 | `air_time` | `step_reward` 3.0, threshold 0.01 | The sprint's. It pays steps only on a non-zero command, so stepping in place under a red earns nothing (on green it pays stepping in place too; `progress` pays walking over it). |
@@ -175,7 +179,7 @@ Agree with the user before the first run:
 
    ```bash
    # local NVIDIA GPU
-   uv run train Mjlab-SockHeist6m-MicroDuck --env.scene.num-envs 4096 --agent.max-iterations 1000 \
+   uv run train Mjlab-SockHeist6m-MicroDuck --env.scene.num-envs 4096 --agent.max-iterations 2000 \
        --agent.seed 1 --agent.logger tensorboard --agent.run-name <name> > logs/<name>.log 2>&1 &
    # Hugging Face Jobs: the same, plus
    #   --hf-jobs --no-wandb --namespace <user> --ckpt-repo <user>/mjlab-sockheist6m-microduck-<name>
@@ -290,6 +294,9 @@ fork, never `pollen-robotics`; the workshop's home sets that up).
 
 Every number below was measured on a Mac (indicative), except those marked x86, which an
 Hugging Face Job timed on the Space's image: the Arena's x86 physics decides.
+
+The runs of this fork since (base, long, uncap, onesided, brake: 10.53 s → 8.52 s, 5/5, on an x86 RTX 3090
+machine) are in [EXPERIMENTS.md](EXPERIMENTS.md); the folder holds the best of them, onesided's recipe.
 
 ### The reference walker
 
