@@ -202,3 +202,21 @@ Gait of each best, seeds 1–10 (`logs/heist/gait.py`, as in the board analysis)
 
 The recipe with room to grow, run fresh to 5000 iterations (not resumed, so the recipe reproduces). Seed 2:
 its first 3000 iterations are also headfree's seed replicate. Extended further if still improving at 5000.
+
+Commit eda395b, run `2026-11-04_22-02-09_headfree5k`. Score on seeds 1–5 / CHECK over 25 seeds (finished, mean):
+
+| Checkpoint | 2500 | 2600 | 3000 | 3500 | 3800 | 3900 | 4300 | 4400 | 4600 | **4700** | 4800 | 4999 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Score | 8.12 | 7.96 | 7.93 | 7.72 | 7.62 | 6.75 | 13.25 (4/5) | 6.68 | **6.675** | 7.07 | 7.02 | 7.14 |
+| CHECK 25 | 25/25 8.03 | 25/25 7.77 | 25/25 7.52 | 22/25 | 22/25 | 21/25 | 21/25 | 21/25 | 19/25 | **25/25 6.55** | 24/25 | 24/25 |
+
+Of 26 checkpoints from 2500, only 2500, 2600, 3000 and 4700 finish all 25 seeds; every other loses 1–7, all
+**caught early** (0.02–0.18 s into the watch, 1.7–2.0 m/s as the red began), most on the first red after a 0.6–1 s
+first green run at 2.2–2.5 m/s. Seeds 1–5 hide it: 4600's 6.675 s is 19/25.
+
+- **Seed replicate**: at 3000 seed 2 scores 7.93 s (CHECK 25/25, 7.52) against seed 1's 7.62 (7.00): the recipe
+  holds across seeds, within the ~0.5 s run-to-run noise.
+- **Still improving past 3000**: cruise 1.62 m/s at 3000 → 1.80 at 4700 (RS_2350 1.95), the neck 54° forward.
+- **Stopping is now the limit**: from 1.8 m/s it coasts 41–43 cm (RS 39) and reaches the mark at 0.51–0.61 m/s,
+  against RS's 0.27 (seeds 1–25). In training `caught` holds at 1.1–1.7 per step and `fell_over` climbs 0.2 → 1.1:
+  a catch only ends the episode, so the occasional one is worth the speed.
