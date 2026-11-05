@@ -247,15 +247,8 @@ def make_env_cfg(
     # 2.0 / std²=0.05 it costs ~0.19/step: enough gradient to hold the trunk
     # level in steady gait while transient lean (push recovery, accel) stays
     # affordable.
-    # rollfree (EXPERIMENTS.md; the sprint's W1): roll's std² widens 0.05 → 0.5
-    # as forward speed goes 0.3 → 0.8 m/s. The faster plain networks roll 7.5–8°
-    # σ at cruise against our 3.6°, which std² 0.05 charged ~0.4 a step. Pitch,
-    # and roll when stopped, keep std² 0.05.
-    cfg.rewards["upright"].func = rewards.upright_roll_free
     cfg.rewards["upright"].weight = knobs["upright_reward"]
-    cfg.rewards["upright"].params.update(
-        {"std": math.sqrt(0.05), "roll_std": math.sqrt(0.5), "speed_lo": 0.3, "speed_hi": 0.8}
-    )
+    cfg.rewards["upright"].params["std"] = math.sqrt(0.05)
 
     # Foot-specific configurations. In mjlab 1.3.0 foot_swing_height is fully
     # sensor-driven (no asset_cfg); only foot_clearance/foot_slip still carry an
@@ -292,9 +285,7 @@ def make_env_cfg(
     cfg.rewards["air_time"].params["threshold_min"] = 0.125
     cfg.rewards["air_time"].params["threshold_max"] = 0.300
 
-    # rollfree (the sprint's W2): -0.05 → -0.01. The rocking of a long stride
-    # (roll rate² ~9 at 8° σ) cost ~0.4 a step at -0.05.
-    cfg.rewards["body_ang_vel"].weight = -0.01
+    cfg.rewards["body_ang_vel"].weight = -0.05
     cfg.rewards["angular_momentum"].weight = -0.02
 
     # Velocity tracking rewards. track_linear_velocity pays progress on green at
@@ -318,15 +309,16 @@ def make_env_cfg(
         params={"command_name": "twist", "std": lights.TOLERANCE_M},
     )
 
-    # Forward speed, past the command up to 2.0 m/s on green (EXPERIMENTS.md,
-    # uncap; was up to the command). Measured under the lights, a statue earned
-    # 8.92 a step, the warm-start walker 7.91 and one that walks on green and
-    # freezes on red 8.29: the walker reaches ~0.45 of its command, which
+    # Forward speed, past the command up to 2.5 m/s on green (EXPERIMENTS.md,
+    # uncap, then vref25: 2.0 → 2.5, same pay per m/s; the score's cliff is at
+    # ~1.9 m/s cruise, where a 2.0 cap stops pulling). Measured under the lights, a
+    # statue earned 8.92 a step, the warm-start walker 7.91 and one that walks on
+    # green and freezes on red 8.29: the walker reaches ~0.45 of its command, which
     # track_linear_velocity barely pays over a statue. base and long scored best
     # at the sweep's top, 1.20 m/s, walking ~1.1 m/s: the cap was the limit.
     cfg.rewards["progress"] = RewardTermCfg(
         func=rewards.progress, weight=knobs["progress_reward"],
-        params={"command_name": "twist", "v_ref": 2.0},
+        params={"command_name": "twist", "v_ref": 2.5},
     )
 
     # Action smoothness: stage-0 value; the action_rate_weight curriculum below

@@ -2,7 +2,6 @@
 told of the light and the lane. Each reads the LightsCommand (lights.py) named `command_name`."""
 
 import torch
-from mjlab.utils.lab_api.math import quat_apply_inverse
 
 from . import lights
 
@@ -33,18 +32,6 @@ def track_linear_velocity_at_least(env, command_name: str, std: float) -> torch.
     err_x = torch.where(command[:, 0] > 0.0, short.clamp(min=0.0), short)
     err = err_x.square() + (command[:, 1] - v[:, 1]).square() + v[:, 2].square()
     return torch.exp(-err / std**2)
-
-
-def upright_roll_free(env, std: float, roll_std: float, speed_lo: float, speed_hi: float, asset_cfg) -> torch.Tensor:
-    """mjlab's `upright` whose tolerance for ROLL widens from `std` to `roll_std` as forward speed goes `speed_lo` →
-    `speed_hi` (smoothstep; the sprint's W1): exp(-g_x² / std² - g_y² / σ²), g the trunk's projected gravity. A
-    stopped duck (a red, the settle) keeps `std` both ways; pitch always does."""
-    asset = env.scene[asset_cfg.name]
-    quat = asset.data.body_link_quat_w[:, asset_cfg.body_ids, :].squeeze(1)
-    g = quat_apply_inverse(quat, asset.data.gravity_vec_w.expand(quat.shape[0], 3))
-    t = ((asset.data.root_link_lin_vel_b[:, 0] - speed_lo) / (speed_hi - speed_lo)).clamp(0.0, 1.0)
-    var_roll = std**2 + t * t * (3.0 - 2.0 * t) * (roll_std**2 - std**2)
-    return torch.exp(-g[:, 0].square() / std**2 - g[:, 1].square() / var_roll)
 
 
 def caught(env, command_name: str) -> torch.Tensor:
