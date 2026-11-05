@@ -12,10 +12,11 @@ iterations. The run name says the change.
 
 ## Outcome
 
-**10.532 s → 8.516 s, 5/5** locally (base 999 → onesided 1900), against 24.159 s for the walker and
-16.98 s for the shipped reference on this machine. The folder holds onesided's recipe: the shipped one,
-plus 2000 iterations with the smoothness ramp capped at −0.3 (long), `progress` paid past the command up to
-2.0 m/s (uncap) and forward tracking one-sided on green (onesided). brake was not kept.
+**10.532 s → 7.616 s, 5/5** locally (base 999 → headfree 2999), against 24.159 s for the walker and
+16.98 s for the shipped reference on this machine. The folder holds headfree's recipe: the shipped one, plus
+the smoothness ramp capped at −0.3 (long), `progress` paid past the command up to 2.0 m/s (uncap), forward
+tracking one-sided on green (onesided) and no head reward (headfree), at 5000 iterations. brake, rollfree and
+vref25 were not kept.
 
 Published: onesided 1900 (`2026-11-03_14-33-50_onesided`, commit 74974ac) as
 `heyskylark/microduck-heist-onesided`, **8.516 s, 5/5 at 1.20 m/s on the Space**, the same as locally
@@ -33,6 +34,10 @@ Bars on this machine: the walker 24.159 s at 1.00 m/s 5/5; heist5-300 (the shipp
 | uncap | 68796c3 | `progress` past the command, up to 2.0 m/s | 2000 | 1800 | 8.677 s 5/5 @1.20 | 25/25, mean 8.66 s, worst drift 1.2 cm, 1.24–1.33 m/s on green |
 | onesided | 74974ac | `track_linear_velocity` one-sided forward on green | 2000 | 1900 | 8.516 s 5/5 @1.20 | 25/25, mean 8.46 s, worst drift 1.2 cm, 1.27–1.35 m/s on green |
 | brake | f9c0dd0 | Stillness paid on the turn's last 0.1 s | 2000 | 1800 | 8.591 s 5/5 @1.20 | 25/25, mean 8.49 s, worst drift 0.9 cm, 1.27–1.35 m/s on green |
+| ctrl | 3950713 | none: onesided at 3000 iterations | 3000 | 2800 | 8.310 s 5/5 @1.15 | 25/25, mean 8.24 s, worst drift 1.7 cm |
+| **headfree** | ffe4797 | no `head_pose_tracking`, no `head_pose_bias` | 3000 | 2999 | **7.616 s 5/5 @1.20** | 25/25, mean 7.00 s, worst drift 1.9 cm |
+| rollfree | ee4b20f | `upright` roll std² 0.05 → 0.5 with speed, `body_ang_vel` −0.01 | 3000 | 1800 | 8.263 s 5/5 @1.05 | 25/25, mean 8.21 s, worst drift 1.5 cm |
+| vref25 | 1d97e21 | `progress` up to 2.5 m/s | 3000 | 2400 | 8.528 s 5/5 @1.20 | 25/25, mean 8.46 s, worst drift 1.2 cm |
 
 ### base
 
@@ -164,3 +169,36 @@ Each one change on onesided's recipe, to find a recipe with room to grow; the pr
 | headfree | `head_pose_tracking` and `head_pose_bias` (and its ramp) removed: the head does what it likes |
 | rollfree | `upright` roll std² 0.05 → 0.5 as forward speed goes 0.3 → 0.8 m/s (sprint W1), with `body_ang_vel` −0.05 → −0.01 (W2): both price the rocking |
 | vref25 | `progress` paid up to 2.5 m/s (was 2.0), same pay per m/s |
+
+Scores every 100 iterations (all 5/5 unless noted):
+
+| Run | 500 | 1000 | 1500 | 2000 | 2200 | 2400 | 2600 | 2800 | 2900 | 2999 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| ctrl | 15.13 | 9.94 | 9.25 | 8.71 | 8.38 | 8.43 | 8.32 | **8.31** | 8.45 | 8.39 |
+| headfree | 12.05 | 14.40 (4/5) | 8.13 | 8.08 | 7.84 | 7.87 | 7.80 | 7.86 | 7.74 | **7.62** |
+| rollfree | 13.63 | 9.97 | 8.53 | 8.42 | 8.42 | 8.41 | 8.38 | 8.32 | 8.35 | 8.30 (best 8.26 @1800) |
+| vref25 | 15.22 | 9.49 | 9.22 | 8.73 | 9.26 | **8.53** | 8.58 | 8.59 | 9.25 | 8.71 |
+
+Gait of each best, seeds 1–10 (`logs/heist/gait.py`, as in the board analysis):
+
+| | ctrl-2800 | headfree-2999 | rollfree-1800 | vref25-2400 | RS_2350 |
+|---|---|---|---|---|---|
+| Cruise speed | 1.39 m/s | **1.74 m/s** | 1.42 m/s | 1.36 m/s | 1.94 m/s |
+| Stride length / rate | 0.41 m / 3.42 Hz | **0.60 m** / 2.90 Hz | 0.43 m / 3.30 Hz | 0.39 m / 3.50 Hz | 0.54 m / 3.61 Hz |
+| Neck from home / head lean | +1° / −19° | **−41° / +38°** | +10° / −25° | 0° / −19° | −27° / +11° |
+| Trunk roll σ | 3.9° | 3.4° | **7.5°** | 3.9° | 7.5° |
+| Coast / speed at the mark | 30 cm / 0.19 | 39 cm / 0.42 | 36 cm / 0.42 | 27 cm / 0.12 | 37 cm / 0.25 |
+| Distance 1 s after a red | 1.06 m | 1.16 m | 1.04 m | 1.02 m | 1.22 m |
+
+- **headfree is the lever**: −0.69 s on ctrl, still improving at 2999 (−0.22 s over the last 800 iterations). The
+  head goes 38° forward and the stride to 0.60 m (longer than RS's, at a slower cadence): 1.74 m/s. Stops stay
+  clean (25/25, worst drift 1.9 cm).
+- **rollfree gets RS's roll (7.5° σ) but not its speed** (1.42 m/s): rocking is not what makes the stride.
+- **vref25 does nothing**: nothing reaches the 2.0 m/s cap yet.
+- **Run-to-run noise is ~0.7 s**: ctrl is onesided's recipe for its first 2000 iterations (the curricula are
+  keyed to the step), yet it scored 9.2 s at 1700 where onesided scored 8.52 s. One seed decides nothing small.
+
+## headfree5k: headfree at 5000 iterations, seed 2
+
+The recipe with room to grow, run fresh to 5000 iterations (not resumed, so the recipe reproduces). Seed 2:
+its first 3000 iterations are also headfree's seed replicate. Extended further if still improving at 5000.

@@ -75,9 +75,11 @@ walks on its command is all the challenge asks.
   fallen against the wall within ~1 s on the Arena (0/25), while `progress` paid it all the same.
 - **No `heading_hold`, no standing episodes**: the hold commands the yaw rate, and the reds stand
   about 45 % of every episode.
-- **2000 iterations, a checkpoint every 100**: warm-started Tug of War runs peaked early and fell
-  between 250-iteration checkpoints. Judge every checkpoint; keep the best, not the last. (Was 1000:
-  `base` was still improving at 999; see `EXPERIMENTS.md`.)
+- **5000 iterations, a checkpoint every 100**: warm-started Tug of War runs peaked early and fell
+  between 250-iteration checkpoints. Judge every checkpoint; keep the best, not the last. (Was 1000,
+  then 2000, then 3000: each recipe was still improving at its end; see `EXPERIMENTS.md`.)
+- **No head reward** (headfree): `head_pose_tracking` and `head_pose_bias` are gone; the head leans
+  forward as it likes, and the stride lengthens with it (−0.69 s at 3000 iterations).
 - **The smoothness ramp is capped at −0.3** (`action_rate_l2`, by iteration 750; was −1.0 by 1500),
   the sprint's B2: past it the ramp brakes the walk.
 
@@ -86,7 +88,7 @@ walks on its command is all the challenge asks.
 | File | What it holds | Change it? |
 |---|---|---|
 | `challenge.toml` `[params]` | The five knobs below | Yes, first. Keep each value within its `min`/`max` (the workshop refuses others) |
-| `challenge.toml` `[recipe]` | `num_envs` 4096, `max_iterations` 2000, `seed` 1 | Yes, when agreed with the user |
+| `challenge.toml` `[recipe]` | `num_envs` 4096, `max_iterations` 5000, `seed` 1 | Yes, when agreed with the user |
 | `env.py` | The whole environment: rewards, commands, domain randomization, curricula, terrain, `RL_CFG` (network, PPO, checkpoints every 100 iterations) | Yes, once the knobs are not enough |
 | `rewards.py` | `freeze`, `progress`, `track_linear_velocity_at_least`, `caught`, and the critic's `light_state` and `lane_state` | Yes, to add a reward term (then add it to `cfg.rewards` in `env.py`) |
 | `EXPERIMENTS.md` | Every run of this folder: its hypothesis, commit and the evaluator's numbers | Yes, after each run |
@@ -113,7 +115,7 @@ The reward terms as they start:
 | `upright` | `upright_reward` 2.0, std √0.05 | The sprint's. A forward lean is what ends in a fall on a stop. |
 | `air_time` | `step_reward` 3.0, threshold 0.01 | The sprint's. It pays steps only on a non-zero command, so stepping in place under a red earns nothing (on green it pays stepping in place too; `progress` pays walking over it). |
 | `pose` | 1.0 | The sprint's: on a zero command its standing std pulls the legs to the standing pose. |
-| gait and smoothness terms | the sprint's | Unchanged shaping of the walk the walker already has. |
+| gait and smoothness terms | the sprint's | Unchanged shaping of the walk the walker already has. No head terms (headfree). |
 | `caught` (termination) | none | It costs every reward still to come (γ 0.99), as a fall does. |
 | `off_lane` (termination) | none | The trunk more than 0.3 m off its lane (the Arena's half-width less 0.1 m) ends the episode, as the Arena's wall would. |
 
@@ -179,7 +181,7 @@ Agree with the user before the first run:
 
    ```bash
    # local NVIDIA GPU
-   uv run train Mjlab-SockHeist6m-MicroDuck --env.scene.num-envs 4096 --agent.max-iterations 2000 \
+   uv run train Mjlab-SockHeist6m-MicroDuck --env.scene.num-envs 4096 --agent.max-iterations 5000 \
        --agent.seed 1 --agent.logger tensorboard --agent.run-name <name> > logs/<name>.log 2>&1 &
    # Hugging Face Jobs: the same, plus
    #   --hf-jobs --no-wandb --namespace <user> --ckpt-repo <user>/mjlab-sockheist6m-microduck-<name>
@@ -295,8 +297,9 @@ fork, never `pollen-robotics`; the workshop's home sets that up).
 Every number below was measured on a Mac (indicative), except those marked x86, which an
 Hugging Face Job timed on the Space's image: the Arena's x86 physics decides.
 
-The runs of this fork since (base, long, uncap, onesided, brake: 10.53 s → 8.52 s, 5/5, on an x86 RTX 3090
-machine) are in [EXPERIMENTS.md](EXPERIMENTS.md); the folder holds the best of them, onesided's recipe.
+The runs of this fork since (base, long, uncap, onesided, brake, then the posture batch ctrl, headfree,
+rollfree, vref25: 10.53 s → 7.62 s, 5/5, on an x86 RTX 3090 machine) are in [EXPERIMENTS.md](EXPERIMENTS.md);
+the folder holds the best of them, headfree's recipe.
 
 ### The reference walker
 

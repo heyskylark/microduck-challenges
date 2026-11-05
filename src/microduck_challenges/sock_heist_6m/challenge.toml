@@ -8,9 +8,9 @@ kind  = "perpetual"
 [command]
 twist = "[vx: the speed the Arena times you at, 0 from the moment the giant starts turning its head until it looks away; unused; yaw rate: the lane's heading hold, 0 while the giant turns or looks]"
 
-[recipe]                  # posture batch: 3000 iterations, the smoothness ramp capped at -0.3
+[recipe]                  # headfree, still improving at 3000: 5000 iterations, the smoothness ramp capped at -0.3
 num_envs       = 4096
-max_iterations = 3000
+max_iterations = 5000
 seed           = 1
 
 [params.forward_reward]

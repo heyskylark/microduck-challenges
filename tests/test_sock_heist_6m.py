@@ -343,7 +343,7 @@ def test_the_walker_walks_in_the_training_env(live, walker_step):
 
 def test_the_recipe_judges_every_hundred_iterations():
     recipe = tomllib.loads((FOLDER / "challenge.toml").read_text())["recipe"]
-    assert recipe == {"num_envs": 4096, "max_iterations": 3000, "seed": 1} and env.RL_CFG.save_interval == 100
+    assert recipe == {"num_envs": 4096, "max_iterations": 5000, "seed": 1} and env.RL_CFG.save_interval == 100
 
 
 def _outcome(status, x, caught_frame=None, time_s=None):
