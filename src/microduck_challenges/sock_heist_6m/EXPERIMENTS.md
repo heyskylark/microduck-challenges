@@ -120,12 +120,47 @@ rule. It did what it was paid for, modestly. Stops over seeds 1–25 at 1.20 m/s
 Neither comes near the 3 cm rule here; brake's value would be margin on the Space's physics, which drifts
 from this machine's. Its code is in f9c0dd0.
 
-## Next
+## What the faster plain networks do (board analysis, 2026-11-04)
 
-- **Seeds**: every result above is one training seed, and onesided's lead over uncap (−0.16 s) and over
-  brake (−0.075 s) is within what a seed can move. A seed 2 of onesided (and of brake) says which holds.
-- **Faster on green**: onesided walks 1.27–1.35 m/s of a 2.0 m/s `progress` reference; the sprint's
-  fastest averaged ~1.65 m/s. The sprint's next levers: the mirror loss and `lane_drift` (I2/I3, against
-  the drift the fast gaits had; here `off_lane` stands for the wall), `body_ang_vel` −0.05 → −0.01 (W2),
-  and the head/trunk lean (LP), riskiest here: a forward lean is what falls on a stop.
-- **The coast**: ~28 cm a red is free distance only the Arena sees; nothing in training pays it.
+The board's top 20 (4.89–5.08 s) are all lookup graphs (ArgMin/Where/Gather over recorded seeds). The best plain
+networks, same 61→14 MLP as ours: RSanchez996 (6.09 s, 6.15 s; checkpoint 5000 of a 15000-iteration run, "no
+attention to the head"), lphatnguyen v3 (7.18 s; ~4000 iterations). Measured in the Arena's race, seeds 1–10, each
+at its scored speed (`logs/heist/gait.py`); cruise = green from 0.8 s after its start:
+
+| | RS_2350 | RS_0951 | lphat_v3 | ours (onesided-1900) |
+|---|---|---|---|---|
+| Score (seeds 1–10) | 6.00 s | 6.11 s | 6.76 s | 8.48 s |
+| Cruise speed | 1.94 m/s | 1.90 m/s | 1.65 m/s | 1.33 m/s |
+| Stride length / rate | 0.54 m / 3.61 Hz | 0.54 m / 3.53 Hz | 0.46 m / 3.61 Hz | 0.39 m / 3.45 Hz |
+| Hip pitch / hip roll range | 66° / 45° | 61° / 32° | 46° / 32° | 47° / 25° |
+| Trunk roll σ | 7.5° | 8.0° | 5.0° | 3.6° |
+| Neck from home / head lean | −27° / +11° | −12° / +17° | −17° / +2° | −6° / −12° |
+| Trunk pitch | −0.3° | +12.7° | −2.1° | −0.4° |
+| Reach 0.5 m/s after a red | 0.18 s | 0.19 s | 0.17 s | 0.20 s |
+| Distance 1 s after a red | 1.22 m | 1.23 m | 1.17 m | 1.01 m |
+| Speed as the red begins / coast / at the mark | 1.78 / 37 cm / 0.25 | 1.84 / 40 cm / 0.30 | 1.69 / 47 cm / 0.49 | 1.31 / 29 cm / 0.22 |
+
+- **Speed is stride length**: same cadence, 40 % longer strides with wider hips and twice the trunk roll. The head
+  leans forward; the trunk need not (RS_2350 runs upright).
+- **The restart is not slow**: every policy reaches 0.5 m/s ~0.2 s after a green; the 0.2 m we lose by 1 s is top speed.
+- **Stopping from 1.9 m/s is fine**: 37–40 cm coast, ≤1.8 cm drift.
+- **A cliff at ~1.9 m/s**: a model fitted to the five scored timetables (constant acceleration, cruise, a coast
+  through the turn; 0.09 s rms on our and RS's seeds) gives 8.41 s at 1.33 m/s, 7.54 s at 1.75 and 5.96 s at 1.95:
+  seeds 3–5 then cross in the second red's turn and save a whole red. `progress` stops paying at 2.0 m/s.
+- **What onesided's terms charge their cruise**, per step (`logs/heist/price.py`): `progress` ours 10.9 / RS_2350
+  15.2; everything else ours +3.0 / RS_2350 +1.5: head terms −0.8 (`head_pose_tracking` 1.72 → 1.37,
+  `head_pose_bias` −0.55 → −0.94), roll −0.75 (`upright` 1.81 → 1.42, `body_ang_vel` −0.08 → −0.43). Their gait
+  is still worth ~+2.8 a step here: a better optimum not found, taxed on the way. The leg `pose` term is ~0 for
+  every gait (hip roll std 0.05 rad): not a lever.
+
+## Posture batch (3000 iterations, seed 1, four at once)
+
+Each one change on onesided's recipe, to find a recipe with room to grow; the promising one is then run longer
+(5000 or more while still improving).
+
+| Run | Change |
+|---|---|
+| ctrl | none: onesided at 3000 iterations |
+| headfree | `head_pose_tracking` and `head_pose_bias` (and its ramp) removed: the head does what it likes |
+| rollfree | `upright` roll std² 0.05 → 0.5 as forward speed goes 0.3 → 0.8 m/s (sprint W1), with `body_ang_vel` −0.05 → −0.01 (W2): both price the rocking |
+| vref25 | `progress` paid up to 2.5 m/s (was 2.0), same pay per m/s |
